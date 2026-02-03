@@ -4,6 +4,7 @@ import CryptoJS from 'crypto-js';
 
 const SmePortal = () => {
   const [companyId, setCompanyId] = useState('');
+  const [department, setDepartment] = useState('Finance');
   const [period, setPeriod] = useState('');
   const [fileHash, setFileHash] = useState('');
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -36,7 +37,8 @@ const SmePortal = () => {
     formData.append('file', file);
     formData.append('reportId', reportId);
     formData.append('companyId', companyId);
-    formData.append('reportHash', fileHash); // We still send the hash for the blockchain
+    formData.append('department', department);
+    formData.append('reportHash', fileHash);
     formData.append('period', period);
 
     try {
@@ -57,6 +59,20 @@ const SmePortal = () => {
       <h1>📤 SME Submission Portal</h1>
       <div style={{ background: '#f4f4f4', padding: '20px', borderRadius: '8px' }}>
         <input style={styles.input} placeholder="Company ID" onChange={e => setCompanyId(e.target.value)} />
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Department:</label>
+          <select
+            value={department}
+            onChange={e => setDepartment(e.target.value)}
+            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+          >
+            <option value="Finance">Finance</option>
+            <option value="Sales">Sales</option>
+            <option value="Inventory">Inventory / Logistics</option>
+            <option value="HR">HR & Payroll</option>
+            <option value="Tax">Tax Compliance</option>
+          </select>
+        </div>
         <input style={styles.input} placeholder="Audit Period" onChange={e => setPeriod(e.target.value)} />
         <input type="file" style={styles.input} onChange={handleFileChange} />
         <button style={styles.button} onClick={handleSubmit}>Submit Report</button>
