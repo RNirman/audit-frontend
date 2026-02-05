@@ -8,10 +8,12 @@ const SmePortal = () => {
   const [period, setPeriod] = useState('');
   const [fileHash, setFileHash] = useState('');
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [fileName, setFileName] = useState('');
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setFileName(file.name);
       const reader = new FileReader();
       reader.onload = (evt) => {
         const hash = CryptoJS.SHA256(evt.target.result).toString();
@@ -55,37 +57,158 @@ const SmePortal = () => {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>📤 SME Submission Portal</h1>
-      <div style={{ background: '#f4f4f4', padding: '20px', borderRadius: '8px' }}>
-        <input style={styles.input} placeholder="Company ID" onChange={e => setCompanyId(e.target.value)} />
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Department:</label>
-          <select
-            value={department}
-            onChange={e => setDepartment(e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
-          >
-            <option value="Finance">Finance</option>
-            <option value="Sales">Sales</option>
-            <option value="Inventory">Inventory / Logistics</option>
-            <option value="HR">HR & Payroll</option>
-            <option value="Tax">Tax Compliance</option>
-          </select>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        {/* Card Container */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-10 text-center">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <span className="text-4xl">📤</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">SME Submission Portal</h1>
+            <p className="text-blue-100 text-sm">Submit Audit Reports Securely</p>
+          </div>
+
+          {/* Form Section */}
+          <div className="px-8 py-8">
+            <div className="space-y-6">
+              {/* Company ID Input */}
+              <div>
+                <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Company ID
+                </label>
+                <input
+                  id="companyId"
+                  type="text"
+                  placeholder="Enter your company ID"
+                  onChange={e => setCompanyId(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
+                />
+              </div>
+
+              {/* Department Select */}
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
+                  Department
+                </label>
+                <select
+                  id="department"
+                  value={department}
+                  onChange={e => setDepartment(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none bg-white"
+                >
+                  <option value="Finance">Finance</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Inventory">Inventory / Logistics</option>
+                  <option value="HR">HR & Payroll</option>
+                  <option value="Tax">Tax Compliance</option>
+                </select>
+              </div>
+
+              {/* Audit Period Input */}
+              <div>
+                <label htmlFor="period" className="block text-sm font-medium text-gray-700 mb-2">
+                  Audit Period
+                </label>
+                <input
+                  id="period"
+                  type="text"
+                  placeholder="e.g., Q1 2024"
+                  onChange={e => setPeriod(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
+                />
+              </div>
+
+              {/* File Upload */}
+              <div>
+                <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Report
+                </label>
+                <div className="relative">
+                  <input
+                    id="file"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="file"
+                    className="w-full flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition duration-200 cursor-pointer bg-gray-50 hover:bg-blue-50"
+                  >
+                    <div className="text-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <p className="mt-2 text-sm text-gray-600">
+                        {fileName ? (
+                          <span className="font-medium text-blue-600">{fileName}</span>
+                        ) : (
+                          <>
+                            <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
+                          </>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">PDF, XLSX, DOCX up to 10MB</p>
+                    </div>
+                  </label>
+                </div>
+                {fileHash && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-xs text-green-700 font-mono break-all">
+                      <span className="font-semibold">Hash:</span> {fileHash.substring(0, 40)}...
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Message */}
+              {submitStatus && (
+                <div className={`px-4 py-3 rounded-lg flex items-center gap-2 ${
+                  submitStatus.includes('Success') 
+                    ? 'bg-green-50 border border-green-200 text-green-700' 
+                    : submitStatus.includes('Error')
+                    ? 'bg-red-50 border border-red-200 text-red-700'
+                    : 'bg-blue-50 border border-blue-200 text-blue-700'
+                }`}>
+                  {submitStatus.includes('Success') ? (
+                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  ) : submitStatus.includes('Error') ? (
+                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="animate-spin w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  <span className="text-sm font-medium">{submitStatus}</span>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmit}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform transition duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+              >
+                Submit Report
+              </button>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-8 py-6 bg-gray-50 border-t border-gray-100">
+            <p className="text-center text-sm text-gray-600">
+              All submissions are encrypted and stored on the blockchain
+            </p>
+          </div>
         </div>
-        <input style={styles.input} placeholder="Audit Period" onChange={e => setPeriod(e.target.value)} />
-        <input type="file" style={styles.input} onChange={handleFileChange} />
-        <button style={styles.button} onClick={handleSubmit}>Submit Report</button>
-        {submitStatus && <p>{submitStatus}</p>}
       </div>
     </div>
   );
-};
-
-// Reusing your simple styles
-const styles = {
-  input: { display: 'block', width: '100%', padding: '10px', marginBottom: '10px' },
-  button: { padding: '10px 20px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }
 };
 
 export default SmePortal;

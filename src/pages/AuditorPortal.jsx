@@ -68,165 +68,200 @@ const AuditorPortal = () => {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
-            <h1>👨‍⚖️ Auditor Dashboard</h1>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-                <thead>
-                    <tr style={{ background: '#f4f4f4', textAlign: 'left', borderBottom: '2px solid #ddd' }}>
-                        <th style={{ padding: '10px' }}>ID</th>
-                        <th style={{ padding: '10px' }}>Company</th>
-                        <th style={{ padding: '10px' }}>Department</th>
-                        <th style={{ padding: '10px' }}>Period</th>
-                        <th style={{ padding: '10px' }}>Status</th>
-                        <th style={{ padding: '10px' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {allAudits.map((audit) => (
-                        <tr key={audit.id} style={{ borderBottom: '1px solid #eee' }}>
-                            <td style={{ padding: '10px', fontSize: '12px', color: '#555' }}>{audit.id}</td>
-                            <td style={{ padding: '10px', fontWeight: 'bold' }}>{audit.companyId}</td>
-                            <td style={{ padding: '10px', color: '#555' }}>
-                                <span style={{
-                                    background: '#e5e7eb', padding: '4px 8px', borderRadius: '12px', fontSize: '12px'
-                                }}>
-                                    {audit.department}
-                                </span>
-                            </td>
-                            <td style={{
-                                padding: '10px',
-                                fontWeight: 'bold',
-                                color: audit.status === 'APPROVED' ? 'green' : audit.status === 'REJECTED' ? 'red' : 'orange'
-                            }}>
-                                {audit.status}
-                            </td>
-
-                            <td style={{ padding: '10px' }}>
-                                {/* UPDATED DOWNLOAD BUTTON */}
-                                <button
-                                    onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)}
-                                    style={{ marginRight: '8px', cursor: 'pointer', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '5px' }}
-                                    title="Download File"
-                                >
-                                    📥
-                                </button>
-
-                                <button
-                                    onClick={() => viewHistory(audit.id)}
-                                    style={{ marginRight: '15px', cursor: 'pointer', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '5px' }}
-                                    title="View Audit Trail"
-                                >
-                                    📜
-                                </button>
-
-                                <button
-                                    onClick={() => updateStatus(audit.id, 'APPROVED')}
-                                    disabled={audit.status === 'APPROVED'}
-                                    style={{
-                                        marginRight: '5px',
-                                        cursor: audit.status === 'APPROVED' ? 'not-allowed' : 'pointer',
-                                        opacity: audit.status === 'APPROVED' ? 0.3 : 1,
-                                        border: 'none', background: 'transparent', fontSize: '18px'
-                                    }}
-                                    title="Approve"
-                                >
-                                    ✅
-                                </button>
-
-                                <button
-                                    onClick={() => updateStatus(audit.id, 'REJECTED')}
-                                    disabled={audit.status === 'REJECTED'}
-                                    style={{
-                                        cursor: audit.status === 'REJECTED' ? 'not-allowed' : 'pointer',
-                                        opacity: audit.status === 'REJECTED' ? 0.3 : 1,
-                                        border: 'none', background: 'transparent', fontSize: '18px'
-                                    }}
-                                    title="Reject"
-                                >
-                                    ❌
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-
-            {selectedReportId && (
-                <div style={{ position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div style={{ background: 'white', padding: '30px', borderRadius: '12px', maxWidth: '600px', width: '90%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
-
-                        {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 px-4">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6">
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-8">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                <span className="text-3xl">👨‍⚖️</span>
+                            </div>
                             <div>
-                                <h2 style={{ margin: 0, color: '#1f2937' }}>📜 Audit History</h2>
-                                <span style={{ fontSize: '14px', color: '#6b7280' }}>Ref: {selectedReportId}</span>
+                                <h1 className="text-3xl font-bold text-white">Auditor Dashboard</h1>
+                                <p className="text-blue-100 text-sm mt-1">Review and manage audit submissions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Table Container */}
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-200">
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Department</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Period</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {allAudits.map((audit) => (
+                                    <tr key={audit.id} className="hover:bg-gray-50 transition duration-150">
+                                        <td className="px-6 py-4 text-xs text-gray-600 font-mono">{audit.id}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-semibold text-gray-900">{audit.companyId}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                                {audit.department}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">{audit.auditPeriod}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                                                audit.status === 'APPROVED' 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : audit.status === 'REJECTED' 
+                                                    ? 'bg-red-100 text-red-800' 
+                                                    : 'bg-orange-100 text-orange-800'
+                                            }`}>
+                                                {audit.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                {/* Download Button */}
+                                                <button
+                                                    onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)}
+                                                    className="p-2 hover:bg-blue-50 border border-gray-300 rounded-lg transition duration-200 hover:border-blue-400 group"
+                                                    title="Download File"
+                                                >
+                                                    <span className="text-lg group-hover:scale-110 inline-block transition-transform">📥</span>
+                                                </button>
+
+                                                {/* History Button */}
+                                                <button
+                                                    onClick={() => viewHistory(audit.id)}
+                                                    className="p-2 hover:bg-purple-50 border border-gray-300 rounded-lg transition duration-200 hover:border-purple-400 group"
+                                                    title="View Audit Trail"
+                                                >
+                                                    <span className="text-lg group-hover:scale-110 inline-block transition-transform">📜</span>
+                                                </button>
+
+                                                {/* Approve Button */}
+                                                <button
+                                                    onClick={() => updateStatus(audit.id, 'APPROVED')}
+                                                    disabled={audit.status === 'APPROVED'}
+                                                    className={`p-2 border rounded-lg transition duration-200 ${
+                                                        audit.status === 'APPROVED'
+                                                            ? 'opacity-30 cursor-not-allowed border-gray-300'
+                                                            : 'hover:bg-green-50 border-gray-300 hover:border-green-400 cursor-pointer group'
+                                                    }`}
+                                                    title="Approve"
+                                                >
+                                                    <span className={`text-lg ${audit.status !== 'APPROVED' ? 'group-hover:scale-110' : ''} inline-block transition-transform`}>✅</span>
+                                                </button>
+
+                                                {/* Reject Button */}
+                                                <button
+                                                    onClick={() => updateStatus(audit.id, 'REJECTED')}
+                                                    disabled={audit.status === 'REJECTED'}
+                                                    className={`p-2 border rounded-lg transition duration-200 ${
+                                                        audit.status === 'REJECTED'
+                                                            ? 'opacity-30 cursor-not-allowed border-gray-300'
+                                                            : 'hover:bg-red-50 border-gray-300 hover:border-red-400 cursor-pointer group'
+                                                    }`}
+                                                    title="Reject"
+                                                >
+                                                    <span className={`text-lg ${audit.status !== 'REJECTED' ? 'group-hover:scale-110' : ''} inline-block transition-transform`}>❌</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Empty State */}
+                    {allAudits.length === 0 && (
+                        <div className="py-16 text-center">
+                            <div className="text-6xl mb-4">📋</div>
+                            <p className="text-gray-500 text-lg">No audits available</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* History Modal */}
+            {selectedReportId && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                                    <span>📜</span>
+                                    <span>Audit History</span>
+                                </h2>
+                                <p className="text-blue-100 text-sm mt-1">Reference: {selectedReportId}</p>
                             </div>
                             <button
                                 onClick={closeHistory}
-                                style={{ cursor: 'pointer', border: 'none', background: '#f3f4f6', width: '32px', height: '32px', borderRadius: '50%', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151' }}
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition duration-200 text-white text-xl"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        {/* Timeline Content */}
-                        <div style={{ marginTop: '10px' }}>
+                        {/* Modal Content - Scrollable */}
+                        <div className="overflow-y-auto px-8 py-6 flex-1">
                             {history.map((entry, index) => {
                                 // 1. Determine Color/Icon based on status
                                 const isApproved = entry.record.status === 'APPROVED';
                                 const isRejected = entry.record.status === 'REJECTED';
-                                const color = isApproved ? '#059669' : isRejected ? '#dc2626' : '#d97706'; // Green, Red, Orange
-                                const bg = isApproved ? '#d1fae5' : isRejected ? '#fee2e2' : '#fef3c7'; // Light versions
+                                const color = isApproved ? '#059669' : isRejected ? '#dc2626' : '#d97706';
+                                const bg = isApproved ? '#d1fae5' : isRejected ? '#fee2e2' : '#fef3c7';
                                 const icon = isApproved ? '✅' : isRejected ? '❌' : '⏳';
 
-                                // 2. Format Date (Handling typical Go/JS timestamp strings)
-                                // Note: If your timestamp is purely numeric seconds, use new Date(entry.timestamp * 1000)
+                                // 2. Format Date
                                 const dateObj = new Date(entry.timestamp);
                                 const dateStr = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
                                 const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
                                 return (
-                                    <div key={index} style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+                                    <div key={index} className="flex gap-4 mb-6">
                                         {/* Left: Time Column */}
-                                        <div style={{ width: '90px', textAlign: 'right', flexShrink: 0 }}>
-                                            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#374151' }}>{dateStr}</div>
-                                            <div style={{ fontSize: '12px', color: '#9ca3af' }}>{timeStr}</div>
+                                        <div className="w-24 text-right flex-shrink-0 pt-1">
+                                            <div className="text-sm font-semibold text-gray-700">{dateStr}</div>
+                                            <div className="text-xs text-gray-500">{timeStr}</div>
                                         </div>
 
-                                        {/* Center: Line & Dot */}
-                                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: color, zIndex: 1 }}></div>
-                                            {/* Draw line only if not the last item */}
+                                        {/* Center: Timeline */}
+                                        <div className="relative flex flex-col items-center">
+                                            <div 
+                                                className="w-3 h-3 rounded-full z-10 flex-shrink-0" 
+                                                style={{ backgroundColor: color }}
+                                            ></div>
                                             {index !== history.length - 1 && (
-                                                <div style={{ width: '2px', flexGrow: 1, backgroundColor: '#e5e7eb', marginTop: '2px' }}></div>
+                                                <div className="w-0.5 bg-gray-300 flex-grow mt-1"></div>
                                             )}
                                         </div>
 
-                                        {/* Right: Card Content */}
-                                        <div style={{ flexGrow: 1, paddingBottom: '10px' }}>
-                                            <div style={{
-                                                border: `1px solid ${color}`,
-                                                backgroundColor: bg,
-                                                borderRadius: '8px',
-                                                padding: '12px',
-                                                position: 'relative'
-                                            }}>
-                                                <div style={{ fontWeight: 'bold', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span>{icon}</span>
+                                        {/* Right: Content Card */}
+                                        <div className="flex-grow pb-2">
+                                            <div 
+                                                className="rounded-xl p-4 border-2"
+                                                style={{ 
+                                                    borderColor: color,
+                                                    backgroundColor: bg 
+                                                }}
+                                            >
+                                                <div className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                                                    <span className="text-xl">{icon}</span>
                                                     <span>Status changed to {entry.record.status}</span>
                                                 </div>
 
-                                                <div style={{ marginTop: '8px', fontSize: '12px', color: '#4b5563' }}>
-                                                    <span style={{ fontWeight: '600' }}>Blockchain TxID: </span>
+                                                <div className="text-xs text-gray-700">
+                                                    <span className="font-semibold">Blockchain TxID: </span>
                                                     <span
-                                                        title={entry.txId} // Full ID shows on hover
-                                                        style={{
-                                                            fontFamily: 'monospace',
-                                                            backgroundColor: 'rgba(255,255,255,0.6)',
-                                                            padding: '2px 6px',
-                                                            borderRadius: '4px',
-                                                            cursor: 'help'
-                                                        }}
+                                                        title={entry.txId}
+                                                        className="font-mono bg-white bg-opacity-60 px-2 py-1 rounded cursor-help inline-block"
                                                     >
                                                         {entry.txId.substring(0, 12)}...
                                                     </span>
@@ -236,6 +271,13 @@ const AuditorPortal = () => {
                                     </div>
                                 );
                             })}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-8 py-4 bg-gray-50 border-t border-gray-200">
+                            <p className="text-center text-sm text-gray-600">
+                                All changes are immutably recorded on the blockchain
+                            </p>
                         </div>
                     </div>
                 </div>
