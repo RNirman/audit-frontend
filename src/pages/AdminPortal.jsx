@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useEffect } from 'react';
 
 const AdminPortal = () => {
     const [formData, setFormData] = useState({
         username: '', password: '', role: 'SME', name: '', companyId: ''
     });
     const [message, setMessage] = useState('');
+    const [users, setUsers] = useState([]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,6 +26,22 @@ const AdminPortal = () => {
             setMessage('❌ Error: ' + (error.response?.data?.error || "Failed"));
         }
     };
+
+    const fetchUsers = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:4000/api/users', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUsers(res.data);
+        } catch (err) {
+            console.error("Fetch users failed");
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, [message]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
@@ -135,11 +153,10 @@ const AdminPortal = () => {
 
                             {/* Success/Error Message */}
                             {message && (
-                                <div className={`px-4 py-3 rounded-lg flex items-center gap-2 ${
-                                    message.includes('✅') 
-                                        ? 'bg-green-50 border border-green-200 text-green-700' 
-                                        : 'bg-red-50 border border-red-200 text-red-700'
-                                }`}>
+                                <div className={`px-4 py-3 rounded-lg flex items-center gap-2 ${message.includes('✅')
+                                    ? 'bg-green-50 border border-green-200 text-green-700'
+                                    : 'bg-red-50 border border-red-200 text-red-700'
+                                    }`}>
                                     {message.includes('✅') ? (
                                         <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -161,6 +178,55 @@ const AdminPortal = () => {
                                 Create User
                             </button>
                         </form>
+                    </div>
+
+                    <div style={{ marginTop: '40px' }}>
+                        <h2>👥 Existing Users</h2>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ background: '#eee', textAlign: 'left' }}>
+                                    <th style={{ padding: '8px' }}>Username</th>
+                                    <th>Role</th>
+                                    <th>Company ID</th>
+                                    <th>Full Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {users.map(u => (
+                                    <tr key={u._id} style={{ borderBottom: '1px solid #ddd' }}>
+                                        <td style={{ padding: '8px' }}>{u.username}</td>
+                                        <td>
+                                            <span style={{
+                                                padding: '2px 6px', borderRadius: '4px', fontSize: '11px', color: 'white',
+                                                background: u.role === 'ADMIN' ? 'black' : u.role === 'AUDITOR' ? 'blue' : 'green'
+                                            }}>
+                                                {u.role}
+                                            </span>
+                                        </td>
+                                        <td>{u.companyId || '-'}</td>
+                                        <td>{u.name}</td>
+                                        <td>
+                                            {u.role !== 'ADMIN' && ( // Don't let Admin delete themselves!
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm(`Delete user ${u.username}?`)) {
+                                                            const token = localStorage.getItem('token');
+                                                            await axios.delete(`http://localhost:4000/api/users/${u.username}`, {
+                                                                headers: { Authorization: `Bearer ${token}` }
+                                                            });
+                                                            fetchUsers(); // Refresh table
+                                                        }
+                                                    }}
+                                                    style={{ background: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
 
                     {/* Footer */}

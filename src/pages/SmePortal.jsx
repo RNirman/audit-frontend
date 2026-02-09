@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
+import { useEffect } from 'react';
 
 const SmePortal = () => {
-  const [companyId, setCompanyId] = useState('');
   const [department, setDepartment] = useState('Finance');
   const [period, setPeriod] = useState('');
   const [fileHash, setFileHash] = useState('');
   const [submitStatus, setSubmitStatus] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [myAudits, setMyAudits] = useState([]);
+  const [companyId, setCompanyId] = useState(localStorage.getItem('companyId') || '');
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -56,6 +58,22 @@ const SmePortal = () => {
     }
   };
 
+  const fetchMyAudits = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:4000/api/audits', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyAudits(res.data);
+    } catch (err) {
+      console.error("Error fetching audits");
+    }
+  };
+
+  useEffect(() => {
+    fetchMyAudits();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
@@ -79,11 +97,19 @@ const SmePortal = () => {
                   Company ID
                 </label>
                 <input
-                  id="companyId"
                   type="text"
-                  placeholder="Enter your company ID"
-                  onChange={e => setCompanyId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
+                  value={companyId}
+                  readOnly // User cannot type
+                  disabled // Prevents focus
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    backgroundColor: '#e9ecef', // Grey background
+                    color: '#495057',           // Dark grey text
+                    cursor: 'not-allowed'       // "Stop" cursor on hover
+                  }}
                 />
               </div>
 
@@ -164,13 +190,12 @@ const SmePortal = () => {
 
               {/* Status Message */}
               {submitStatus && (
-                <div className={`px-4 py-3 rounded-lg flex items-center gap-2 ${
-                  submitStatus.includes('Success') 
-                    ? 'bg-green-50 border border-green-200 text-green-700' 
-                    : submitStatus.includes('Error')
+                <div className={`px-4 py-3 rounded-lg flex items-center gap-2 ${submitStatus.includes('Success')
+                  ? 'bg-green-50 border border-green-200 text-green-700'
+                  : submitStatus.includes('Error')
                     ? 'bg-red-50 border border-red-200 text-red-700'
                     : 'bg-blue-50 border border-blue-200 text-blue-700'
-                }`}>
+                  }`}>
                   {submitStatus.includes('Success') ? (
                     <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -197,6 +222,43 @@ const SmePortal = () => {
                 Submit Report
               </button>
             </div>
+          </div>
+
+          <div style={{ marginTop: '40px', borderTop: '2px solid #eee', paddingTop: '20px' }}>
+            <h2>📂 My Submission History</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+              <thead>
+                <tr style={{ background: '#f8f9fa', textAlign: 'left' }}>
+                  <th style={{ padding: '10px' }}>Report ID</th>
+                  <th>Period</th>
+                  <th>Dept</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myAudits.map((audit) => (
+                  <tr key={audit.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '10px' }}>{audit.id}</td>
+                    <td>{audit.auditPeriod}</td>
+                    <td>{audit.department}</td>
+                    <td>
+                      <span style={{
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold',
+                        color: audit.status === 'APPROVED' ? 'green' : audit.status === 'REJECTED' ? 'red' : 'orange',
+                        background: audit.status === 'APPROVED' ? '#d1fae5' : audit.status === 'REJECTED' ? '#fee2e2' : '#fef3c7'
+                      }}>
+                        {audit.status}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '12px', color: '#666' }}>
+                      {new Date(audit.submissionDate).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {myAudits.length === 0 && <p style={{ textAlign: 'center', color: '#888' }}>No submissions yet.</p>}
           </div>
 
           {/* Footer */}

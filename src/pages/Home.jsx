@@ -7,15 +7,19 @@ const Home = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  useState(localStorage.getItem('companyId') || '');
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const res = await axios.post('http://localhost:4000/api/login', { username, password });
-
-      // 1. Save Token and Role to Browser Storage
+      
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', res.data.role);
+
+      if (res.data.companyId) {
+        localStorage.setItem('companyId', res.data.companyId);
+      }
 
       // 2. Redirect based on Role
       if (res.data.role === 'SME') {

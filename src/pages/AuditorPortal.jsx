@@ -6,6 +6,11 @@ const AuditorPortal = () => {
     const [history, setHistory] = useState([]);
     const [selectedReportId, setSelectedReportId] = useState(null);
 
+    const total = allAudits.length;
+    const approved = allAudits.filter(a => a.status === 'APPROVED').length;
+    const rejected = allAudits.filter(a => a.status === 'REJECTED').length;
+    const pending = total - approved - rejected;
+
     const getAuthHeader = () => {
         return { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
     };
@@ -69,6 +74,31 @@ const AuditorPortal = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 px-4">
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+                {/* Card 1: Total */}
+                <div style={{ flex: 1, padding: '20px', background: '#3b82f6', color: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                    <h3 style={{ margin: 0, fontSize: '14px', opacity: 0.8 }}>TOTAL REPORTS</h3>
+                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold' }}>{total}</p>
+                </div>
+
+                {/* Card 2: Pending */}
+                <div style={{ flex: 1, padding: '20px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <h3 style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>⏳ PENDING REVIEW</h3>
+                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold', color: '#d97706' }}>{pending}</p>
+                </div>
+
+                {/* Card 3: Approved */}
+                <div style={{ flex: 1, padding: '20px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <h3 style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>✅ APPROVED</h3>
+                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold', color: '#059669' }}>{approved}</p>
+                </div>
+
+                {/* Card 4: Rejected */}
+                <div style={{ flex: 1, padding: '20px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <h3 style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>❌ REJECTED</h3>
+                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold', color: '#dc2626' }}>{rejected}</p>
+                </div>
+            </div>
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6">
@@ -113,13 +143,12 @@ const AuditorPortal = () => {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">{audit.auditPeriod}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                                                audit.status === 'APPROVED' 
-                                                    ? 'bg-green-100 text-green-800' 
-                                                    : audit.status === 'REJECTED' 
-                                                    ? 'bg-red-100 text-red-800' 
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${audit.status === 'APPROVED'
+                                                ? 'bg-green-100 text-green-800'
+                                                : audit.status === 'REJECTED'
+                                                    ? 'bg-red-100 text-red-800'
                                                     : 'bg-orange-100 text-orange-800'
-                                            }`}>
+                                                }`}>
                                                 {audit.status}
                                             </span>
                                         </td>
@@ -147,11 +176,10 @@ const AuditorPortal = () => {
                                                 <button
                                                     onClick={() => updateStatus(audit.id, 'APPROVED')}
                                                     disabled={audit.status === 'APPROVED'}
-                                                    className={`p-2 border rounded-lg transition duration-200 ${
-                                                        audit.status === 'APPROVED'
-                                                            ? 'opacity-30 cursor-not-allowed border-gray-300'
-                                                            : 'hover:bg-green-50 border-gray-300 hover:border-green-400 cursor-pointer group'
-                                                    }`}
+                                                    className={`p-2 border rounded-lg transition duration-200 ${audit.status === 'APPROVED'
+                                                        ? 'opacity-30 cursor-not-allowed border-gray-300'
+                                                        : 'hover:bg-green-50 border-gray-300 hover:border-green-400 cursor-pointer group'
+                                                        }`}
                                                     title="Approve"
                                                 >
                                                     <span className={`text-lg ${audit.status !== 'APPROVED' ? 'group-hover:scale-110' : ''} inline-block transition-transform`}>✅</span>
@@ -161,11 +189,10 @@ const AuditorPortal = () => {
                                                 <button
                                                     onClick={() => updateStatus(audit.id, 'REJECTED')}
                                                     disabled={audit.status === 'REJECTED'}
-                                                    className={`p-2 border rounded-lg transition duration-200 ${
-                                                        audit.status === 'REJECTED'
-                                                            ? 'opacity-30 cursor-not-allowed border-gray-300'
-                                                            : 'hover:bg-red-50 border-gray-300 hover:border-red-400 cursor-pointer group'
-                                                    }`}
+                                                    className={`p-2 border rounded-lg transition duration-200 ${audit.status === 'REJECTED'
+                                                        ? 'opacity-30 cursor-not-allowed border-gray-300'
+                                                        : 'hover:bg-red-50 border-gray-300 hover:border-red-400 cursor-pointer group'
+                                                        }`}
                                                     title="Reject"
                                                 >
                                                     <span className={`text-lg ${audit.status !== 'REJECTED' ? 'group-hover:scale-110' : ''} inline-block transition-transform`}>❌</span>
@@ -234,8 +261,8 @@ const AuditorPortal = () => {
 
                                         {/* Center: Timeline */}
                                         <div className="relative flex flex-col items-center">
-                                            <div 
-                                                className="w-3 h-3 rounded-full z-10 flex-shrink-0" 
+                                            <div
+                                                className="w-3 h-3 rounded-full z-10 flex-shrink-0"
                                                 style={{ backgroundColor: color }}
                                             ></div>
                                             {index !== history.length - 1 && (
@@ -245,11 +272,11 @@ const AuditorPortal = () => {
 
                                         {/* Right: Content Card */}
                                         <div className="flex-grow pb-2">
-                                            <div 
+                                            <div
                                                 className="rounded-xl p-4 border-2"
-                                                style={{ 
+                                                style={{
                                                     borderColor: color,
-                                                    backgroundColor: bg 
+                                                    backgroundColor: bg
                                                 }}
                                             >
                                                 <div className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
