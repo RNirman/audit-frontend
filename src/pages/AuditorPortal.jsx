@@ -5,16 +5,19 @@ const AuditorPortal = () => {
     const [allAudits, setAllAudits] = useState([]);
     const [history, setHistory] = useState([]);
     const [selectedReportId, setSelectedReportId] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const total = allAudits.length;
-    const approved = allAudits.filter(a => a.status === 'APPROVED').length;
-    const rejected = allAudits.filter(a => a.status === 'REJECTED').length;
-    const pending = total - approved - rejected;
+    // --- NEW: FILTER STATE ---
+    const [filterStatus, setFilterStatus] = useState('ALL');
+    const [filterDept, setFilterDept] = useState('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
 
+    // --- AUTH HELPER ---
     const getAuthHeader = () => {
         return { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
     };
 
+    // --- FETCH DATA ---
     const fetchAllAudits = async () => {
         try {
             const response = await axios.get('http://localhost:4000/api/audits', getAuthHeader());
@@ -28,28 +31,36 @@ const AuditorPortal = () => {
         fetchAllAudits();
     }, []);
 
-    // UPDATED: Now accepts CompanyID and Period to create a better filename
+    // --- ACTIONS ---
     const downloadReport = async (id, companyId, period) => {
         try {
             const response = await axios.get(`http://localhost:4000/api/audit/${id}/download`, {
                 ...getAuthHeader(),
                 responseType: 'blob'
             });
-
-            // Create a clean filename (e.g. "SME_Alpha_Dec-2025.xlsx")
-            const cleanPeriod = period.replace(/[^a-zA-Z0-9]/g, '_'); // Remove special chars
+            const cleanPeriod = period.replace(/[^a-zA-Z0-9]/g, '_');
             const fileName = `${companyId}_${cleanPeriod}.xlsx`;
-
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', fileName); // Browser will use this name
+            link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
             link.parentNode.removeChild(link);
         } catch (error) {
-            alert("Download Failed: File might not exist on server.");
+            alert("Download Failed: File might not exist.");
         }
+    };
+
+    const updateStatus = async (id, newStatus) => {
+        setIsLoading(true);
+        try {
+            await axios.put(`http://localhost:4000/api/audit/${id}/status`, { status: newStatus }, getAuthHeader());
+            await fetchAllAudits(); // Refresh data
+        } catch (error) {
+            alert("Update failed");
+        }
+        setIsLoading(false);
     };
 
     const viewHistory = async (id) => {
@@ -62,249 +73,232 @@ const AuditorPortal = () => {
         }
     };
 
-    const closeHistory = () => {
-        setHistory([]);
-        setSelectedReportId(null);
-    };
+    // --- FILTERING LOGIC ---
+    const filteredAudits = allAudits.filter(audit => {
+        // 1. Check Status
+        const statusMatch = filterStatus === 'ALL' || audit.status === filterStatus;
+        // 2. Check Department
+        const deptMatch = filterDept === 'ALL' || audit.department === filterDept;
+        // 3. Check Search (Company ID or Report ID)
+        const searchLower = searchQuery.toLowerCase();
+        const searchMatch = audit.companyId.toLowerCase().includes(searchLower) || 
+                            audit.id.toLowerCase().includes(searchLower);
 
-    const updateStatus = async (id, newStatus) => {
-        await axios.put(`http://localhost:4000/api/audit/${id}/status`, { status: newStatus }, getAuthHeader());
-        fetchAllAudits();
-    };
+        return statusMatch && deptMatch && searchMatch;
+    });
+
+    // --- CALCULATE STATS ---
+    const total = allAudits.length;
+    const approved = allAudits.filter(a => a.status === 'APPROVED').length;
+    const rejected = allAudits.filter(a => a.status === 'REJECTED').length;
+    const pending = total - approved - rejected;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 px-4">
-            <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-                {/* Card 1: Total */}
-                <div style={{ flex: 1, padding: '20px', background: '#3b82f6', color: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ margin: 0, fontSize: '14px', opacity: 0.8 }}>TOTAL REPORTS</h3>
-                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold' }}>{total}</p>
-                </div>
-
-                {/* Card 2: Pending */}
-                <div style={{ flex: 1, padding: '20px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>⏳ PENDING REVIEW</h3>
-                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold', color: '#d97706' }}>{pending}</p>
-                </div>
-
-                {/* Card 3: Approved */}
-                <div style={{ flex: 1, padding: '20px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>✅ APPROVED</h3>
-                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold', color: '#059669' }}>{approved}</p>
-                </div>
-
-                {/* Card 4: Rejected */}
-                <div style={{ flex: 1, padding: '20px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>❌ REJECTED</h3>
-                    <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold', color: '#dc2626' }}>{rejected}</p>
-                </div>
-            </div>
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6">
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-8">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                <span className="text-3xl">👨‍⚖️</span>
-                            </div>
-                            <div>
-                                <h1 className="text-3xl font-bold text-white">Auditor Dashboard</h1>
-                                <p className="text-blue-100 text-sm mt-1">Review and manage audit submissions</p>
-                            </div>
+        <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+            
+            {/* 1. TOP NAVIGATION BAR */}
+            <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between h-16">
+                        <div className="flex items-center">
+                            <span className="text-2xl mr-2">👨‍⚖️</span>
+                            <h1 className="text-xl font-bold text-gray-800">AuditControl <span className="text-blue-600">Pro</span></h1>
+                        </div>
+                        <div className="flex items-center">
+                            <button 
+                                onClick={() => { localStorage.clear(); window.location.href = '/'; }}
+                                className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+                            >
+                                Logout
+                            </button>
                         </div>
                     </div>
                 </div>
+            </nav>
 
-                {/* Table Container */}
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                
+                {/* 2. STATS DASHBOARD */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <StatCard title="Total Reports" value={total} color="bg-blue-600" textColor="text-white" />
+                    <StatCard title="Pending Review" value={pending} color="bg-white" textColor="text-orange-600" border="border-l-4 border-orange-500" />
+                    <StatCard title="Approved" value={approved} color="bg-white" textColor="text-green-600" border="border-l-4 border-green-500" />
+                    <StatCard title="Rejected" value={rejected} color="bg-white" textColor="text-red-600" border="border-l-4 border-red-500" />
+                </div>
+
+                {/* 3. FILTER BAR (NEW) */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="flex gap-4 w-full md:w-auto">
+                        {/* Search Input */}
+                        <div className="relative flex-grow md:flex-grow-0">
+                            <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                            <input 
+                                type="text" 
+                                placeholder="Search Company or ID..." 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-64"
+                            />
+                        </div>
+
+                        {/* Department Filter */}
+                        <select 
+                            value={filterDept} 
+                            onChange={(e) => setFilterDept(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
+                        >
+                            <option value="ALL">All Departments</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Inventory">Inventory</option>
+                            <option value="HR">HR & Payroll</option>
+                            <option value="Tax">Tax</option>
+                        </select>
+                    </div>
+
+                    {/* Status Filter Tabs */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                                    filterStatus === status 
+                                    ? 'bg-white text-gray-900 shadow-sm' 
+                                    : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                            >
+                                {status.charAt(0) + status.slice(1).toLowerCase()}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 4. MAIN DATA TABLE */}
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <h2 className="text-lg font-semibold text-gray-700">Audit Queue</h2>
+                        <span className="text-xs text-gray-500">
+                            Showing {filteredAudits.length} of {allAudits.length} records
+                        </span>
+                    </div>
+
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-gray-50 border-b border-gray-200">
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Department</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Period</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                                    <th className="px-6 py-3 font-medium">Report ID</th>
+                                    <th className="px-6 py-3 font-medium">Company</th>
+                                    <th className="px-6 py-3 font-medium">Dept</th>
+                                    <th className="px-6 py-3 font-medium">Period</th>
+                                    <th className="px-6 py-3 font-medium">Status</th>
+                                    <th className="px-6 py-3 font-medium text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {allAudits.map((audit) => (
-                                    <tr key={audit.id} className="hover:bg-gray-50 transition duration-150">
-                                        <td className="px-6 py-4 text-xs text-gray-600 font-mono">{audit.id}</td>
+                            <tbody className="divide-y divide-gray-100">
+                                {filteredAudits.map((audit) => (
+                                    <tr key={audit.id} className="hover:bg-blue-50 transition-colors duration-150">
+                                        <td className="px-6 py-4 text-sm font-mono text-gray-500">{audit.id}</td>
+                                        <td className="px-6 py-4 text-sm font-bold text-gray-800">{audit.companyId}</td>
                                         <td className="px-6 py-4">
-                                            <span className="font-semibold text-gray-900">{audit.companyId}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                                                 {audit.department}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">{audit.auditPeriod}</td>
+                                        <td className="px-6 py-4 text-sm text-blue-600 font-medium">{audit.auditPeriod}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${audit.status === 'APPROVED'
-                                                ? 'bg-green-100 text-green-800'
-                                                : audit.status === 'REJECTED'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-orange-100 text-orange-800'
-                                                }`}>
-                                                {audit.status}
-                                            </span>
+                                            <StatusBadge status={audit.status} />
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                {/* Download Button */}
-                                                <button
-                                                    onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)}
-                                                    className="p-2 hover:bg-blue-50 border border-gray-300 rounded-lg transition duration-200 hover:border-blue-400 group"
-                                                    title="Download File"
-                                                >
-                                                    <span className="text-lg group-hover:scale-110 inline-block transition-transform">📥</span>
-                                                </button>
-
-                                                {/* History Button */}
-                                                <button
-                                                    onClick={() => viewHistory(audit.id)}
-                                                    className="p-2 hover:bg-purple-50 border border-gray-300 rounded-lg transition duration-200 hover:border-purple-400 group"
-                                                    title="View Audit Trail"
-                                                >
-                                                    <span className="text-lg group-hover:scale-110 inline-block transition-transform">📜</span>
-                                                </button>
-
-                                                {/* Approve Button */}
-                                                <button
-                                                    onClick={() => updateStatus(audit.id, 'APPROVED')}
-                                                    disabled={audit.status === 'APPROVED'}
-                                                    className={`p-2 border rounded-lg transition duration-200 ${audit.status === 'APPROVED'
-                                                        ? 'opacity-30 cursor-not-allowed border-gray-300'
-                                                        : 'hover:bg-green-50 border-gray-300 hover:border-green-400 cursor-pointer group'
-                                                        }`}
-                                                    title="Approve"
-                                                >
-                                                    <span className={`text-lg ${audit.status !== 'APPROVED' ? 'group-hover:scale-110' : ''} inline-block transition-transform`}>✅</span>
-                                                </button>
-
-                                                {/* Reject Button */}
-                                                <button
-                                                    onClick={() => updateStatus(audit.id, 'REJECTED')}
-                                                    disabled={audit.status === 'REJECTED'}
-                                                    className={`p-2 border rounded-lg transition duration-200 ${audit.status === 'REJECTED'
-                                                        ? 'opacity-30 cursor-not-allowed border-gray-300'
-                                                        : 'hover:bg-red-50 border-gray-300 hover:border-red-400 cursor-pointer group'
-                                                        }`}
-                                                    title="Reject"
-                                                >
-                                                    <span className={`text-lg ${audit.status !== 'REJECTED' ? 'group-hover:scale-110' : ''} inline-block transition-transform`}>❌</span>
-                                                </button>
-                                            </div>
+                                        <td className="px-6 py-4 text-right space-x-2">
+                                            <ActionButton 
+                                                onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)} 
+                                                icon="📥" title="Download" 
+                                            />
+                                            <ActionButton 
+                                                onClick={() => viewHistory(audit.id)} 
+                                                icon="📜" title="History" 
+                                            />
+                                            {/* Action Buttons */}
+                                            {isLoading ? (
+                                                <span className="text-xs text-gray-400">...</span>
+                                            ) : (
+                                                <>
+                                                    <button 
+                                                        onClick={() => updateStatus(audit.id, 'APPROVED')} 
+                                                        disabled={audit.status === 'APPROVED'}
+                                                        className={`p-2 rounded-full transition-all ${audit.status === 'APPROVED' ? 'opacity-20 cursor-not-allowed' : 'hover:bg-green-100 text-green-600'}`}
+                                                        title="Approve"
+                                                    >
+                                                        ✅
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => updateStatus(audit.id, 'REJECTED')} 
+                                                        disabled={audit.status === 'REJECTED'}
+                                                        className={`p-2 rounded-full transition-all ${audit.status === 'REJECTED' ? 'opacity-20 cursor-not-allowed' : 'hover:bg-red-100 text-red-600'}`}
+                                                        title="Reject"
+                                                    >
+                                                        ❌
+                                                    </button>
+                                                </>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                    </div>
-
-                    {/* Empty State */}
-                    {allAudits.length === 0 && (
-                        <div className="py-16 text-center">
-                            <div className="text-6xl mb-4">📋</div>
-                            <p className="text-gray-500 text-lg">No audits available</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* History Modal */}
-            {selectedReportId && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600">
-                            <div>
-                                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                                    <span>📜</span>
-                                    <span>Audit History</span>
-                                </h2>
-                                <p className="text-blue-100 text-sm mt-1">Reference: {selectedReportId}</p>
+                        {filteredAudits.length === 0 && (
+                            <div className="text-center py-10 text-gray-400">
+                                No records match your filters.
                             </div>
-                            <button
-                                onClick={closeHistory}
-                                className="w-10 h-10 flex items-center justify-center rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition duration-200 text-white text-xl"
-                            >
-                                ✕
-                            </button>
+                        )}
+                    </div>
+                </div>
+            </main>
+
+            {/* 5. HISTORY MODAL (Popup) */}
+            {selectedReportId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col animate-fadeIn">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800">Audit Timeline</h3>
+                                <p className="text-xs text-gray-500 font-mono mt-1">{selectedReportId}</p>
+                            </div>
+                            <button onClick={() => setSelectedReportId(null)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                         </div>
+                        
+                        <div className="p-6 overflow-y-auto">
+                            <div className="space-y-6">
+                                {history.map((entry, index) => {
+                                    const date = new Date(entry.timestamp);
+                                    const isApproved = entry.record.status === 'APPROVED';
+                                    const isRejected = entry.record.status === 'REJECTED';
+                                    const colorClass = isApproved ? 'bg-green-500' : isRejected ? 'bg-red-500' : 'bg-orange-400';
 
-                        {/* Modal Content - Scrollable */}
-                        <div className="overflow-y-auto px-8 py-6 flex-1">
-                            {history.map((entry, index) => {
-                                // 1. Determine Color/Icon based on status
-                                const isApproved = entry.record.status === 'APPROVED';
-                                const isRejected = entry.record.status === 'REJECTED';
-                                const color = isApproved ? '#059669' : isRejected ? '#dc2626' : '#d97706';
-                                const bg = isApproved ? '#d1fae5' : isRejected ? '#fee2e2' : '#fef3c7';
-                                const icon = isApproved ? '✅' : isRejected ? '❌' : '⏳';
-
-                                // 2. Format Date
-                                const dateObj = new Date(entry.timestamp);
-                                const dateStr = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                                const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-
-                                return (
-                                    <div key={index} className="flex gap-4 mb-6">
-                                        {/* Left: Time Column */}
-                                        <div className="w-24 text-right flex-shrink-0 pt-1">
-                                            <div className="text-sm font-semibold text-gray-700">{dateStr}</div>
-                                            <div className="text-xs text-gray-500">{timeStr}</div>
-                                        </div>
-
-                                        {/* Center: Timeline */}
-                                        <div className="relative flex flex-col items-center">
-                                            <div
-                                                className="w-3 h-3 rounded-full z-10 flex-shrink-0"
-                                                style={{ backgroundColor: color }}
-                                            ></div>
-                                            {index !== history.length - 1 && (
-                                                <div className="w-0.5 bg-gray-300 flex-grow mt-1"></div>
-                                            )}
-                                        </div>
-
-                                        {/* Right: Content Card */}
-                                        <div className="flex-grow pb-2">
-                                            <div
-                                                className="rounded-xl p-4 border-2"
-                                                style={{
-                                                    borderColor: color,
-                                                    backgroundColor: bg
-                                                }}
-                                            >
-                                                <div className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
-                                                    <span className="text-xl">{icon}</span>
-                                                    <span>Status changed to {entry.record.status}</span>
-                                                </div>
-
-                                                <div className="text-xs text-gray-700">
-                                                    <span className="font-semibold">Blockchain TxID: </span>
-                                                    <span
-                                                        title={entry.txId}
-                                                        className="font-mono bg-white bg-opacity-60 px-2 py-1 rounded cursor-help inline-block"
-                                                    >
-                                                        {entry.txId.substring(0, 12)}...
-                                                    </span>
+                                    return (
+                                        <div key={index} className="flex gap-4">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-3 h-3 rounded-full ${colorClass} ring-4 ring-white`}></div>
+                                                {index !== history.length - 1 && <div className="w-0.5 h-full bg-gray-200 my-1"></div>}
+                                            </div>
+                                            <div className="pb-6">
+                                                <p className="text-xs text-gray-400 mb-1">
+                                                    {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+                                                </p>
+                                                <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                                                    <p className="text-sm font-semibold text-gray-800">Status: {entry.record.status}</p>
+                                                    <div className="mt-1 flex items-center gap-1">
+                                                        <span className="text-[10px] uppercase text-gray-400 font-bold">TXID:</span>
+                                                        <span className="text-[10px] font-mono bg-white px-1 py-0.5 rounded border text-gray-500 truncate w-32" title={entry.txId}>
+                                                            {entry.txId.substring(0, 15)}...
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="px-8 py-4 bg-gray-50 border-t border-gray-200">
-                            <p className="text-center text-sm text-gray-600">
-                                All changes are immutably recorded on the blockchain
-                            </p>
+                                    )
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -312,5 +306,39 @@ const AuditorPortal = () => {
         </div>
     );
 };
+
+// --- SUB-COMPONENTS ---
+
+const StatCard = ({ title, value, color, textColor, border = '' }) => (
+    <div className={`${color} ${border} rounded-xl shadow-sm p-6 flex flex-col items-start transition-transform hover:scale-105`}>
+        <h3 className={`text-xs uppercase tracking-wide font-semibold opacity-80 mb-1 ${textColor === 'text-white' ? 'text-blue-100' : 'text-gray-500'}`}>{title}</h3>
+        <span className={`text-3xl font-bold ${textColor}`}>{value}</span>
+    </div>
+);
+
+const StatusBadge = ({ status }) => {
+    const styles = {
+        APPROVED: "bg-green-100 text-green-700 border-green-200",
+        REJECTED: "bg-red-100 text-red-700 border-red-200",
+        PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200"
+    };
+    const defaultStyle = "bg-gray-100 text-gray-700 border-gray-200";
+    
+    return (
+        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${styles[status] || defaultStyle}`}>
+            {status}
+        </span>
+    );
+};
+
+const ActionButton = ({ onClick, icon, title }) => (
+    <button 
+        onClick={onClick} 
+        className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+        title={title}
+    >
+        <span className="text-lg">{icon}</span>
+    </button>
+);
 
 export default AuditorPortal;
