@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import CommentsModal from '../components/CommentsModal';
 
 const AuditorPortal = () => {
     const [allAudits, setAllAudits] = useState([]);
     const [history, setHistory] = useState([]);
     const [selectedReportId, setSelectedReportId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [chatReportId, setChatReportId] = useState(null);
 
     // --- NEW: FILTER STATE ---
     const [filterStatus, setFilterStatus] = useState('ALL');
@@ -81,8 +83,8 @@ const AuditorPortal = () => {
         const deptMatch = filterDept === 'ALL' || audit.department === filterDept;
         // 3. Check Search (Company ID or Report ID)
         const searchLower = searchQuery.toLowerCase();
-        const searchMatch = audit.companyId.toLowerCase().includes(searchLower) || 
-                            audit.id.toLowerCase().includes(searchLower);
+        const searchMatch = audit.companyId.toLowerCase().includes(searchLower) ||
+            audit.id.toLowerCase().includes(searchLower);
 
         return statusMatch && deptMatch && searchMatch;
     });
@@ -95,7 +97,7 @@ const AuditorPortal = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-            
+
             {/* 1. TOP NAVIGATION BAR */}
             <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -105,7 +107,7 @@ const AuditorPortal = () => {
                             <h1 className="text-xl font-bold text-gray-800">AuditControl <span className="text-blue-600">Pro</span></h1>
                         </div>
                         <div className="flex items-center">
-                            <button 
+                            <button
                                 onClick={() => { localStorage.clear(); window.location.href = '/'; }}
                                 className="text-sm text-gray-500 hover:text-red-600 transition-colors"
                             >
@@ -117,7 +119,7 @@ const AuditorPortal = () => {
             </nav>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                
+
                 {/* 2. STATS DASHBOARD */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <StatCard title="Total Reports" value={total} color="bg-blue-600" textColor="text-white" />
@@ -132,9 +134,9 @@ const AuditorPortal = () => {
                         {/* Search Input */}
                         <div className="relative flex-grow md:flex-grow-0">
                             <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
-                            <input 
-                                type="text" 
-                                placeholder="Search Company or ID..." 
+                            <input
+                                type="text"
+                                placeholder="Search Company or ID..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-64"
@@ -142,8 +144,8 @@ const AuditorPortal = () => {
                         </div>
 
                         {/* Department Filter */}
-                        <select 
-                            value={filterDept} 
+                        <select
+                            value={filterDept}
                             onChange={(e) => setFilterDept(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
                         >
@@ -162,11 +164,10 @@ const AuditorPortal = () => {
                             <button
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                                    filterStatus === status 
-                                    ? 'bg-white text-gray-900 shadow-sm' 
+                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${filterStatus === status
+                                    ? 'bg-white text-gray-900 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
-                                }`}
+                                    }`}
                             >
                                 {status.charAt(0) + status.slice(1).toLowerCase()}
                             </button>
@@ -210,35 +211,39 @@ const AuditorPortal = () => {
                                             <StatusBadge status={audit.status} />
                                         </td>
                                         <td className="px-6 py-4 text-right space-x-2">
-                                            <ActionButton 
-                                                onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)} 
-                                                icon="📥" title="Download" 
+                                            <ActionButton
+                                                onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)}
+                                                icon="📥" title="Download"
                                             />
-                                            <ActionButton 
-                                                onClick={() => viewHistory(audit.id)} 
-                                                icon="📜" title="History" 
+                                            <ActionButton
+                                                onClick={() => viewHistory(audit.id)}
+                                                icon="📜" title="History"
                                             />
                                             {/* Action Buttons */}
                                             {isLoading ? (
                                                 <span className="text-xs text-gray-400">...</span>
                                             ) : (
                                                 <>
-                                                    <button 
-                                                        onClick={() => updateStatus(audit.id, 'APPROVED')} 
+                                                    <button
+                                                        onClick={() => updateStatus(audit.id, 'APPROVED')}
                                                         disabled={audit.status === 'APPROVED'}
                                                         className={`p-2 rounded-full transition-all ${audit.status === 'APPROVED' ? 'opacity-20 cursor-not-allowed' : 'hover:bg-green-100 text-green-600'}`}
                                                         title="Approve"
                                                     >
                                                         ✅
                                                     </button>
-                                                    <button 
-                                                        onClick={() => updateStatus(audit.id, 'REJECTED')} 
+                                                    <button
+                                                        onClick={() => updateStatus(audit.id, 'REJECTED')}
                                                         disabled={audit.status === 'REJECTED'}
                                                         className={`p-2 rounded-full transition-all ${audit.status === 'REJECTED' ? 'opacity-20 cursor-not-allowed' : 'hover:bg-red-100 text-red-600'}`}
                                                         title="Reject"
                                                     >
                                                         ❌
                                                     </button>
+                                                    <ActionButton
+                                                        onClick={() => setChatReportId(audit.id)}
+                                                        icon="💬" title="Discuss"
+                                                    />
                                                 </>
                                             )}
                                         </td>
@@ -266,7 +271,7 @@ const AuditorPortal = () => {
                             </div>
                             <button onClick={() => setSelectedReportId(null)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                         </div>
-                        
+
                         <div className="p-6 overflow-y-auto">
                             <div className="space-y-6">
                                 {history.map((entry, index) => {
@@ -303,6 +308,14 @@ const AuditorPortal = () => {
                     </div>
                 </div>
             )}
+
+            {chatReportId && (
+                <CommentsModal
+                    reportId={chatReportId}
+                    onClose={() => setChatReportId(null)}
+                    currentUserRole="AUDITOR"
+                />
+            )}
         </div>
     );
 };
@@ -323,7 +336,7 @@ const StatusBadge = ({ status }) => {
         PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200"
     };
     const defaultStyle = "bg-gray-100 text-gray-700 border-gray-200";
-    
+
     return (
         <span className={`px-3 py-1 rounded-full text-xs font-bold border ${styles[status] || defaultStyle}`}>
             {status}
@@ -332,8 +345,8 @@ const StatusBadge = ({ status }) => {
 };
 
 const ActionButton = ({ onClick, icon, title }) => (
-    <button 
-        onClick={onClick} 
+    <button
+        onClick={onClick}
         className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
         title={title}
     >

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
+import CommentsModal from '../components/CommentsModal';
 
 const SmePortal = () => {
     const [department, setDepartment] = useState('Finance');
@@ -31,6 +32,7 @@ const SmePortal = () => {
             reader.readAsBinaryString(file);
         }
     };
+    const [chatReportId, setChatReportId] = useState(null);
 
     const handleSubmit = async () => {
         if (!companyId || !period || !fileHash) return alert("Please fill all fields");
@@ -63,6 +65,32 @@ const SmePortal = () => {
         setIsSubmitting(false);
     };
 
+    const handleResubmit = async (auditId, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 1. Calculate new hash
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const newHash = CryptoJS.SHA256(evt.target.result).toString();
+
+            // 2. Prepare Form Data
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('reportHash', newHash);
+
+            try {
+                // 3. Send to backend
+                await axios.put(`http://localhost:4000/api/audit/${auditId}/resubmit`, formData, getAuthHeader());
+                alert("Report Resubmitted Successfully!");
+                fetchMyAudits(); // Refresh table
+            } catch (err) {
+                alert("Error resubmitting report.");
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
     const fetchMyAudits = async () => {
         try {
             const res = await axios.get('http://localhost:4000/api/audits', getAuthHeader());
@@ -78,7 +106,7 @@ const SmePortal = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-            
+
             {/* 1. TOP NAVIGATION */}
             <nav className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -92,7 +120,7 @@ const SmePortal = () => {
                         </div>
                         <div className="flex items-center gap-4">
                             <span className="text-sm text-gray-500 hidden md:inline">Welcome, {userName}</span>
-                            <button 
+                            <button
                                 onClick={() => { localStorage.clear(); window.location.href = '/'; }}
                                 className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors"
                             >
@@ -104,9 +132,9 @@ const SmePortal = () => {
             </nav>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
+
                     {/* 2. SUBMISSION FORM CARD (Left Side) */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
@@ -116,15 +144,15 @@ const SmePortal = () => {
                                 </h2>
                                 <p className="text-blue-100 text-xs mt-1">Upload financial records for audit</p>
                             </div>
-                            
+
                             <div className="p-6 space-y-5">
                                 {/* Company ID (Locked) */}
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Company ID</label>
                                     <div className="relative">
-                                        <input 
-                                            value={companyId} 
-                                            readOnly 
+                                        <input
+                                            value={companyId}
+                                            readOnly
                                             className="w-full bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none cursor-not-allowed font-mono"
                                         />
                                         <span className="absolute right-3 top-2.5 text-xs text-gray-400">🔒 Locked</span>
@@ -134,8 +162,8 @@ const SmePortal = () => {
                                 {/* Department */}
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Department</label>
-                                    <select 
-                                        value={department} 
+                                    <select
+                                        value={department}
                                         onChange={e => setDepartment(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
                                     >
@@ -150,9 +178,9 @@ const SmePortal = () => {
                                 {/* Period */}
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Audit Period</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="e.g. Jan-2026" 
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Jan-2026"
                                         value={period}
                                         onChange={e => setPeriod(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
@@ -182,7 +210,7 @@ const SmePortal = () => {
                                 </div>
 
                                 {/* Submit Button */}
-                                <button 
+                                <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || !companyId}
                                     className={`w-full py-3 rounded-lg text-white font-semibold shadow-md transition-all flex justify-center items-center gap-2
@@ -219,6 +247,7 @@ const SmePortal = () => {
                                             <th className="px-6 py-3 font-medium">Dept</th>
                                             <th className="px-6 py-3 font-medium">Date</th>
                                             <th className="px-6 py-3 font-medium text-right">Status</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
@@ -228,8 +257,30 @@ const SmePortal = () => {
                                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{audit.auditPeriod}</td>
                                                 <td className="px-6 py-4 text-sm text-gray-600">{audit.department}</td>
                                                 <td className="px-6 py-4 text-sm text-gray-500">{new Date(audit.submissionDate).toLocaleDateString()}</td>
-                                                <td className="px-6 py-4 text-right">
+                                                <td className="px-6 py-4 text-right flex flex-col items-end gap-2">
                                                     <StatusBadge status={audit.status} />
+                                                    {audit.status === 'REJECTED' && (
+                                                        <div className="relative">
+                                                            <input
+                                                                type="file"
+                                                                id={`resubmit-${audit.id}`}
+                                                                className="hidden"
+                                                                onChange={(e) => handleResubmit(audit.id, e)}
+                                                            />
+                                                            <label
+                                                                htmlFor={`resubmit-${audit.id}`}
+                                                                className="text-xs bg-gray-800 text-white px-3 py-1 rounded cursor-pointer hover:bg-black transition-colors"
+                                                            >
+                                                                Fix & Resubmit
+                                                            </label>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <ActionButton
+                                                        onClick={() => setChatReportId(audit.id)}
+                                                        icon="💬" title="Discuss"
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
@@ -247,6 +298,13 @@ const SmePortal = () => {
 
                 </div>
             </main>
+            {chatReportId && (
+                <CommentsModal
+                    reportId={chatReportId}
+                    onClose={() => setChatReportId(null)}
+                    currentUserRole="SME"
+                />
+            )}
         </div>
     );
 };
@@ -264,5 +322,15 @@ const StatusBadge = ({ status }) => {
         </span>
     );
 };
+
+const ActionButton = ({ onClick, icon, title }) => (
+    <button
+        onClick={onClick}
+        className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+        title={title}
+    >
+        <span className="text-lg">{icon}</span>
+    </button>
+);
 
 export default SmePortal;
