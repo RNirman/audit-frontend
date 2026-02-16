@@ -34,6 +34,8 @@ const Home = () => {
                     navigate('/auditor');
                 } else if (res.data.role === 'ADMIN') {
                     navigate('/admin');
+                } else if (res.data.role === 'GOV_AUDITOR') {
+                    navigate('/auditor');
                 }
             }, 500);
 

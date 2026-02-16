@@ -8,11 +8,14 @@ const AuditorPortal = () => {
     const [selectedReportId, setSelectedReportId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [chatReportId, setChatReportId] = useState(null);
+    const [userName] = useState((localStorage.getItem('role') === 'AUDITOR'? ('Auditor'):('Gov. Auditor')) || 'Auditor');
 
-    // --- NEW: FILTER STATE ---
+    // --- FILTER STATE ---
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [filterDept, setFilterDept] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
+
+    const userRole = localStorage.getItem('role');
 
     // --- AUTH HELPER ---
     const getAuthHeader = () => {
@@ -58,7 +61,7 @@ const AuditorPortal = () => {
         setIsLoading(true);
         try {
             await axios.put(`http://localhost:4000/api/audit/${id}/status`, { status: newStatus }, getAuthHeader());
-            await fetchAllAudits(); // Refresh data
+            await fetchAllAudits();
         } catch (error) {
             alert("Update failed");
         }
@@ -93,7 +96,8 @@ const AuditorPortal = () => {
     const total = allAudits.length;
     const approved = allAudits.filter(a => a.status === 'APPROVED').length;
     const rejected = allAudits.filter(a => a.status === 'REJECTED').length;
-    const pending = total - approved - rejected;
+    const passed_step_1 = allAudits.filter(a => a.status === 'PASSED_STEP_1').length;
+    const pending = total - approved - rejected - passed_step_1;
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
@@ -106,10 +110,11 @@ const AuditorPortal = () => {
                             <span className="text-2xl mr-2">👨‍⚖️</span>
                             <h1 className="text-xl font-bold text-gray-800">AuditControl <span className="text-blue-600">Pro</span></h1>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-500 hidden md:inline">Welcome, {userName}</span>
                             <button
                                 onClick={() => { localStorage.clear(); window.location.href = '/'; }}
-                                className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+                                className="text-sm font-medium text-gray-500 hover:text-red-600 transition-colors"
                             >
                                 Logout
                             </button>
@@ -121,9 +126,10 @@ const AuditorPortal = () => {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                 {/* 2. STATS DASHBOARD */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
                     <StatCard title="Total Reports" value={total} color="bg-blue-600" textColor="text-white" />
                     <StatCard title="Pending Review" value={pending} color="bg-white" textColor="text-orange-600" border="border-l-4 border-orange-500" />
+                    <StatCard title="Passed Step 1" value={passed_step_1} color="bg-white" textColor="text-blue-600" border="border-1-4 border-blue-500" />
                     <StatCard title="Approved" value={approved} color="bg-white" textColor="text-green-600" border="border-l-4 border-green-500" />
                     <StatCard title="Rejected" value={rejected} color="bg-white" textColor="text-red-600" border="border-l-4 border-red-500" />
                 </div>
@@ -160,7 +166,7 @@ const AuditorPortal = () => {
 
                     {/* Status Filter Tabs */}
                     <div className="flex bg-gray-100 p-1 rounded-lg">
-                        {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+                        {['ALL', 'PENDING', 'PASSED_STEP_1', 'APPROVED', 'REJECTED'].map((status) => (
                             <button
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
@@ -211,41 +217,55 @@ const AuditorPortal = () => {
                                             <StatusBadge status={audit.status} />
                                         </td>
                                         <td className="px-6 py-4 text-right space-x-2">
-                                            <ActionButton
-                                                onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)}
-                                                icon="📥" title="Download"
-                                            />
-                                            <ActionButton
-                                                onClick={() => viewHistory(audit.id)}
-                                                icon="📜" title="History"
-                                            />
-                                            {/* Action Buttons */}
-                                            {isLoading ? (
-                                                <span className="text-xs text-gray-400">...</span>
-                                            ) : (
+                                            <ActionButton onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)} icon="📥" title="Download" />
+                                            <ActionButton onClick={() => viewHistory(audit.id)} icon="📜" title="History" />
+                                            <ActionButton onClick={() => setChatReportId(audit.id)} icon="💬" title="Discuss" />
+
+                                            {/* LOGIC FOR AUDITOR A (ORG 2) - INITIAL REVIEW */}
+                                            {userRole === 'AUDITOR' && audit.status === 'PENDING' && (
                                                 <>
                                                     <button
-                                                        onClick={() => updateStatus(audit.id, 'APPROVED')}
-                                                        disabled={audit.status === 'APPROVED'}
-                                                        className={`p-2 rounded-full transition-all ${audit.status === 'APPROVED' ? 'opacity-20 cursor-not-allowed' : 'hover:bg-green-100 text-green-600'}`}
-                                                        title="Approve"
+                                                        onClick={() => updateStatus(audit.id, 'PASSED_STEP_1')} // <--- SEND STEP 1
+                                                        className="p-2 rounded-full hover:bg-blue-100 text-blue-600 transition-all"
+                                                        title="Pass Initial Review"
                                                     >
-                                                        ✅
+                                                        🔹 Pass Step 1
                                                     </button>
                                                     <button
                                                         onClick={() => updateStatus(audit.id, 'REJECTED')}
-                                                        disabled={audit.status === 'REJECTED'}
-                                                        className={`p-2 rounded-full transition-all ${audit.status === 'REJECTED' ? 'opacity-20 cursor-not-allowed' : 'hover:bg-red-100 text-red-600'}`}
+                                                        className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-all"
                                                         title="Reject"
                                                     >
                                                         ❌
                                                     </button>
-                                                    <ActionButton
-                                                        onClick={() => setChatReportId(audit.id)}
-                                                        icon="💬" title="Discuss"
-                                                    />
                                                 </>
                                             )}
+
+                                            {/* LOGIC FOR AUDITOR B (ORG 3) - FINAL REVIEW */}
+                                            {userRole === 'GOV_AUDITOR' && audit.status === 'PASSED_STEP_1' && (
+                                                <>
+                                                    <button
+                                                        onClick={() => updateStatus(audit.id, 'APPROVED')} // <--- SEND FINAL APPROVAL
+                                                        className="p-2 rounded-full hover:bg-green-100 text-green-600 transition-all"
+                                                        title="Finalize & Approve"
+                                                    >
+                                                        ✅ Finalize
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateStatus(audit.id, 'REJECTED')}
+                                                        className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-all"
+                                                        title="Reject Final"
+                                                    >
+                                                        ❌
+                                                    </button>
+                                                </>
+                                            )}
+
+                                            {/* SHOW LOCK ICON IF NOT YOUR TURN */}
+                                            {((userRole === 'AUDITOR' && audit.status !== 'PENDING') ||
+                                                (userRole === 'GOV_AUDITOR' && audit.status !== 'PASSED_STEP_1')) && (
+                                                    <span className="text-gray-300 text-xs cursor-not-allowed" title="Action not available at this stage">🔒 Locked</span>
+                                                )}
                                         </td>
                                     </tr>
                                 ))}
@@ -332,6 +352,7 @@ const StatCard = ({ title, value, color, textColor, border = '' }) => (
 const StatusBadge = ({ status }) => {
     const styles = {
         APPROVED: "bg-green-100 text-green-700 border-green-200",
+        PASSED_STEP_1: "bg-blue-100 text-blue-700 border-blue-200",
         REJECTED: "bg-red-100 text-red-700 border-red-200",
         PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200"
     };

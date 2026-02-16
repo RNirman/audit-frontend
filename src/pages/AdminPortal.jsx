@@ -123,7 +123,7 @@ const AdminPortal = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                                 <select name="role" value={formData.role} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                                    <option value="SME">SME (Client)</option><option value="AUDITOR">Auditor</option><option value="ADMIN">Administrator</option>
+                                    <option value="SME">SME (Client)</option><option value="AUDITOR">Auditor</option><option value="GOV_AUDITOR">Gov. Auditor</option><option value="ADMIN">Administrator</option>
                                 </select>
                             </div>
                             {formData.role === 'SME' && (

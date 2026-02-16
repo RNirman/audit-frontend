@@ -34,6 +34,22 @@ const SmePortal = () => {
     };
     const [chatReportId, setChatReportId] = useState(null);
 
+    const getWeekPeriod = () => {
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+        const pastDaysOfYear = (now - startOfYear) / 86400000;
+        
+        const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+        const year = now.getFullYear();
+
+        return `Week ${weekNumber}, ${year}`;
+    };
+
+    useEffect(() => {
+        setPeriod(getWeekPeriod());
+    }, []);
+
     const handleSubmit = async () => {
         if (!companyId || !period || !fileHash) return alert("Please fill all fields");
 
@@ -54,7 +70,6 @@ const SmePortal = () => {
             setSubmitStatus("Submitting to Blockchain...");
             const response = await axios.post('http://localhost:4000/api/audit', formData, getAuthHeader());
             setSubmitStatus(`✅ Success! Report ID: ${response.data.reportId}`);
-            setPeriod('');
             setFileName('');
             setFileHash('');
             fetchMyAudits(); // Refresh table
@@ -180,7 +195,7 @@ const SmePortal = () => {
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Audit Period</label>
                                     <input
                                         type="text"
-                                        placeholder="e.g. Jan-2026"
+                                        placeholder="e.g. Week 20, 2026"
                                         value={period}
                                         onChange={e => setPeriod(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
