@@ -69,10 +69,10 @@ const SmePortal = () => {
         try {
             setSubmitStatus("Submitting to Blockchain...");
             const response = await axios.post('http://localhost:4000/api/audit', formData, getAuthHeader());
-            setSubmitStatus(`✅ Success! Report ID: ${response.data.reportId}`);
+            setSubmitStatus(`✅ Success! Report ID: ${response.data.id}`);
             setFileName('');
             setFileHash('');
-            fetchMyAudits(); // Refresh table
+            fetchMyAudits();
         } catch (error) {
             console.error(error);
             setSubmitStatus("❌ Error submitting transaction.");
