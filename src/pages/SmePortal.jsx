@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, memo, useCallback } from 'react';
+import api from '../api/axios';
 import CryptoJS from 'crypto-js';
 import CommentsModal from '../components/CommentsModal';
+import { Building, Upload, FileText, MessageSquare, Lock, FolderOpen } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useDropzone } from 'react-dropzone';
 
 const SmePortal = () => {
     const [department, setDepartment] = useState('Finance');
@@ -11,27 +14,28 @@ const SmePortal = () => {
     const [fileName, setFileName] = useState('');
     const [myAudits, setMyAudits] = useState([]);
     const [companyId] = useState(localStorage.getItem('companyId') || '');
-    const [userName] = useState(localStorage.getItem('name') || 'SME User');
+    const [userName] = useState(localStorage.getItem('name') || 'User');
+    const [uploadFile, setUploadFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // --- AUTH HELPER ---
-    const getAuthHeader = () => {
-        return { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
-    };
-
     // --- HANDLERS ---
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
+    const onDrop = useCallback((acceptedFiles) => {
+        const file = acceptedFiles[0];
         if (file) {
             setFileName(file.name);
+            setUploadFile(file);
             const reader = new FileReader();
             reader.onload = (evt) => {
-                const hash = CryptoJS.SHA256(evt.target.result).toString();
+                const arrayBuffer = evt.target.result;
+                const wordBuffer = CryptoJS.lib.WordArray.create(arrayBuffer);
+                const hash = CryptoJS.SHA256(wordBuffer).toString();
                 setFileHash(hash);
             };
-            reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
         }
-    };
+    }, []);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, multiple: false });
     const [chatReportId, setChatReportId] = useState(null);
 
     const getWeekPeriod = () => {
@@ -51,15 +55,13 @@ const SmePortal = () => {
     }, []);
 
     const handleSubmit = async () => {
-        if (!companyId || !period || !fileHash) return alert("Please fill all fields");
+        if (!companyId || !period || !fileHash || !uploadFile) return toast.error("Please fill all fields and select a file");
 
         setIsSubmitting(true);
         const reportId = `REP_${Date.now()}`;
-        const fileInput = document.querySelector('input[type="file"]');
-        const file = fileInput.files[0];
 
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', uploadFile);
         formData.append('reportId', reportId);
         formData.append('companyId', companyId);
         formData.append('department', department);
@@ -68,14 +70,17 @@ const SmePortal = () => {
 
         try {
             setSubmitStatus("Submitting to Blockchain...");
-            const response = await axios.post('http://localhost:4000/api/audit', formData, getAuthHeader());
-            setSubmitStatus(`✅ Success! Report ID: ${response.data.id}`);
+            const response = await api.post('/audit', formData);
+            toast.success(`Report ID: ${response.data.id} submitted!`);
+            setSubmitStatus(`Success`);
             setFileName('');
             setFileHash('');
+            setUploadFile(null);
             fetchMyAudits();
         } catch (error) {
             console.error(error);
-            setSubmitStatus("❌ Error submitting transaction.");
+            toast.error("Error submitting transaction.");
+            setSubmitStatus(null);
         }
         setIsSubmitting(false);
     };
@@ -87,7 +92,9 @@ const SmePortal = () => {
         // 1. Calculate new hash
         const reader = new FileReader();
         reader.onload = async (evt) => {
-            const newHash = CryptoJS.SHA256(evt.target.result).toString();
+            const arrayBuffer = evt.target.result;
+            const wordBuffer = CryptoJS.lib.WordArray.create(arrayBuffer);
+            const newHash = CryptoJS.SHA256(wordBuffer).toString();
 
             // 2. Prepare Form Data
             const formData = new FormData();
@@ -96,19 +103,19 @@ const SmePortal = () => {
 
             try {
                 // 3. Send to backend
-                await axios.put(`http://localhost:4000/api/audit/${auditId}/resubmit`, formData, getAuthHeader());
-                alert("Report Resubmitted Successfully!");
+                await api.put(`/audit/${auditId}/resubmit`, formData);
+                toast.success("Report Resubmitted Successfully!");
                 fetchMyAudits(); // Refresh table
             } catch (err) {
-                alert("Error resubmitting report.");
+                toast.error("Error resubmitting report.");
             }
         };
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
     };
 
     const fetchMyAudits = async () => {
         try {
-            const res = await axios.get('http://localhost:4000/api/audits', getAuthHeader());
+            const res = await api.get('/audits');
             setMyAudits(res.data);
         } catch (err) {
             console.error("Error fetching audits");
@@ -120,17 +127,17 @@ const SmePortal = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+        <div className="min-h-screen font-sans">
 
             {/* 1. TOP NAVIGATION */}
-            <nav className="bg-white shadow-sm border-b border-gray-200">
+            <nav className="glass-nav">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center gap-3">
-                            <span className="text-2xl">🏢</span>
+                            <Building className="text-indigo-400" size={28} />
                             <div>
-                                <h1 className="text-lg font-bold text-gray-800 leading-tight">SME Portal</h1>
-                                <p className="text-xs text-blue-600 font-medium">{companyId || 'Company ID Not Assigned'}</p>
+                                <h1 className="text-lg font-bold text-gray-100 leading-tight">SME Portal</h1>
+                                <p className="text-xs text-indigo-400 font-medium">{companyId || 'Company ID Not Assigned'}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -152,10 +159,10 @@ const SmePortal = () => {
 
                     {/* 2. SUBMISSION FORM CARD (Left Side) */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                            <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-700">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <span>📤</span> Submit Report
+                        <div className="glass-card overflow-hidden">
+                            <div className="px-6 py-4 bg-gradient-to-r from-indigo-900 to-indigo-800 border-b border-indigo-700/50">
+                                <h2 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+                                    <Upload size={18} className="text-indigo-400" /> Submit Report
                                 </h2>
                                 <p className="text-blue-100 text-xs mt-1">Upload financial records for audit</p>
                             </div>
@@ -163,24 +170,24 @@ const SmePortal = () => {
                             <div className="p-6 space-y-5">
                                 {/* Company ID (Locked) */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Company ID</label>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Company ID</label>
                                     <div className="relative">
                                         <input
                                             value={companyId}
                                             readOnly
-                                            className="w-full bg-gray-100 text-gray-600 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none cursor-not-allowed font-mono"
+                                            className="w-full bg-gray-800/50 text-gray-400 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none cursor-not-allowed font-mono"
                                         />
-                                        <span className="absolute right-3 top-2.5 text-xs text-gray-400">🔒 Locked</span>
+                                        <span className="absolute right-3 top-2.5 text-xs text-gray-500 flex items-center"><Lock size={12} className="mr-1" /> Locked</span>
                                     </div>
                                 </div>
 
                                 {/* Department */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Department</label>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Department</label>
                                     <select
                                         value={department}
                                         onChange={e => setDepartment(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                                        className="w-full bg-gray-900/50 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none cursor-pointer"
                                     >
                                         <option value="Finance">Finance</option>
                                         <option value="Sales">Sales</option>
@@ -192,34 +199,34 @@ const SmePortal = () => {
 
                                 {/* Period */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Audit Period</label>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Audit Period</label>
                                     <input
                                         type="text"
                                         placeholder="e.g. Week 20, 2026"
                                         value={period}
                                         onChange={e => setPeriod(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        className="w-full bg-gray-900/50 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none placeholder-gray-500"
                                     />
                                 </div>
 
                                 {/* File Upload Area */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Evidence File</label>
-                                    <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition-colors text-center cursor-pointer group">
-                                        <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Evidence File</label>
+                                    <div {...getRootProps()} className={`relative border-2 border-dashed rounded-lg p-6 transition-colors text-center cursor-pointer group ${isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-gray-700 hover:bg-gray-800/50'}`}>
+                                        <input {...getInputProps()} />
                                         <div className="flex flex-col items-center">
-                                            <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">📄</span>
-                                            <span className="text-sm font-medium text-gray-600">
-                                                {fileName || "Click or Drag file here"}
+                                            <FileText className={`w-10 h-10 mb-2 transition-transform ${isDragActive ? 'text-indigo-400 scale-110' : 'text-gray-500 group-hover:scale-110 group-hover:text-indigo-300'}`} />
+                                            <span className="text-sm font-medium text-gray-300">
+                                                {fileName || (isDragActive ? "Drop file here" : "Click or Drag file here")}
                                             </span>
-                                            <span className="text-xs text-gray-400 mt-1">supports .xlsx, .pdf, .docx</span>
+                                            <span className="text-xs text-gray-500 mt-1">supports .xlsx, .pdf, .docx</span>
                                         </div>
                                     </div>
                                     {/* Hash Preview */}
                                     {fileHash && (
-                                        <div className="mt-2 bg-blue-50 p-2 rounded border border-blue-100 flex items-start gap-2">
-                                            <span className="text-xs font-bold text-blue-600 mt-0.5">SHA256:</span>
-                                            <code className="text-[10px] text-blue-800 break-all leading-tight">{fileHash}</code>
+                                        <div className="mt-2 bg-indigo-500/10 p-2 rounded border border-indigo-500/20 flex items-start gap-2">
+                                            <span className="text-xs font-bold text-indigo-400 mt-0.5">SHA256:</span>
+                                            <code className="text-[10px] text-indigo-200 break-all leading-tight">{fileHash}</code>
                                         </div>
                                     )}
                                 </div>
@@ -229,7 +236,7 @@ const SmePortal = () => {
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || !companyId}
                                     className={`w-full py-3 rounded-lg text-white font-semibold shadow-md transition-all flex justify-center items-center gap-2
-                                        ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-xl active:scale-95'}
+                                        ${isSubmitting ? 'bg-gray-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/20 active:scale-95'}
                                     `}
                                 >
                                     {isSubmitting ? 'Processing...' : 'Submit Securely'}
@@ -237,7 +244,7 @@ const SmePortal = () => {
 
                                 {/* Feedback Message */}
                                 {submitStatus && (
-                                    <div className={`text-sm p-3 rounded-lg border ${submitStatus.includes('Success') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-blue-50 border-blue-200 text-blue-700'}`}>
+                                    <div className={`text-sm p-3 rounded-lg border ${submitStatus.includes('Success') ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
                                         {submitStatus}
                                     </div>
                                 )}
@@ -247,16 +254,16 @@ const SmePortal = () => {
 
                     {/* 3. HISTORY TABLE (Right Side) */}
                     <div className="lg:col-span-2">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                                <h2 className="text-lg font-bold text-gray-700">Submission History</h2>
-                                <span className="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">{myAudits.length} Records</span>
+                        <div className="glass-card overflow-hidden h-full flex flex-col">
+                            <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
+                                <h2 className="text-lg font-bold text-gray-200">Submission History</h2>
+                                <span className="bg-gray-800 text-gray-400 border border-gray-700 text-xs px-2 py-1 rounded-full">{myAudits.length} Records</span>
                             </div>
 
                             <div className="overflow-x-auto flex-grow">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-white border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
+                                        <tr className="bg-gray-900/80 border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
                                             <th className="px-6 py-3 font-medium">Report ID</th>
                                             <th className="px-6 py-3 font-medium">Period</th>
                                             <th className="px-6 py-3 font-medium">Dept</th>
@@ -265,12 +272,12 @@ const SmePortal = () => {
                                             <th></th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-50">
+                                    <tbody className="divide-y divide-gray-800">
                                         {myAudits.map((audit) => (
-                                            <tr key={audit.id} className="hover:bg-gray-50 transition-colors">
+                                            <tr key={audit.id} className="hover:bg-gray-800/40 transition-colors">
                                                 <td className="px-6 py-4 text-xs font-mono text-gray-500">{audit.id}</td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-900">{audit.auditPeriod}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{audit.department}</td>
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-200">{audit.auditPeriod}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-400">{audit.department}</td>
                                                 <td className="px-6 py-4 text-sm text-gray-500">{new Date(audit.submissionDate).toLocaleDateString()}</td>
                                                 <td className="px-6 py-4 text-right flex flex-col items-end gap-2">
                                                     <StatusBadge status={audit.status} />
@@ -294,7 +301,7 @@ const SmePortal = () => {
                                                 <td>
                                                     <ActionButton
                                                         onClick={() => setChatReportId(audit.id)}
-                                                        icon="💬" title="Discuss"
+                                                        icon={<MessageSquare size={16} />} title="Discuss"
                                                     />
                                                 </td>
                                             </tr>
@@ -303,7 +310,7 @@ const SmePortal = () => {
                                 </table>
                                 {myAudits.length === 0 && (
                                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                                        <span className="text-4xl mb-2 opacity-30">📁</span>
+                                        <FolderOpen size={40} className="mb-2 opacity-30" />
                                         <p>No submission history found.</p>
                                     </div>
                                 )}
@@ -325,27 +332,27 @@ const SmePortal = () => {
 };
 
 // --- SUB-COMPONENT ---
-const StatusBadge = ({ status }) => {
+const StatusBadge = memo(({ status }) => {
     const styles = {
-        APPROVED: "bg-green-100 text-green-700 border-green-200",
-        REJECTED: "bg-red-100 text-red-700 border-red-200",
-        PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200"
+        APPROVED: "bg-green-500/20 text-green-400 border-green-500/30",
+        REJECTED: "bg-red-500/20 text-red-400 border-red-500/30",
+        PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
     };
     return (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${styles[status] || "bg-gray-100 text-gray-600"}`}>
+        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${styles[status] || "bg-gray-800 text-gray-300 border-gray-700"}`}>
             {status}
         </span>
     );
-};
+});
 
-const ActionButton = ({ onClick, icon, title }) => (
+const ActionButton = memo(({ onClick, icon, title }) => (
     <button
         onClick={onClick}
-        className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+        className="p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-100 rounded-lg transition-colors flex items-center justify-center"
         title={title}
     >
-        <span className="text-lg">{icon}</span>
+        {icon}
     </button>
-);
+));
 
 export default SmePortal;
