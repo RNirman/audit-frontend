@@ -22,11 +22,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response && error.response.status === 401) {
-            // Handle unauthorized access (e.g., redirect to login or clear token)
+        const requestUrl = error.config?.url || '';
+
+        // Do not log the user out or reload the app when the login request itself fails.
+        // Only force logout on real authenticated-route failures.
+        if (error.response && error.response.status === 401 && !requestUrl.includes('/login')) {
             localStorage.clear();
-            window.location.href = '/';
+
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
         }
+
         return Promise.reject(error);
     }
 );

@@ -21,8 +21,14 @@ const AuditorPortal = () => {
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [filterDept, setFilterDept] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
+    const [chartsReady, setChartsReady] = useState(false);
 
     const userRole = localStorage.getItem('role');
+
+    useEffect(() => {
+        const frame = requestAnimationFrame(() => setChartsReady(true));
+        return () => cancelAnimationFrame(frame);
+    }, []);
 
     // --- FETCH DATA ---
     const fetchAllAudits = async () => {
@@ -204,9 +210,9 @@ const AuditorPortal = () => {
                     {/* Department Bar Chart */}
                     <div className="lg:col-span-2 glass-card p-6">
                         <h3 className="text-sm font-bold text-gray-300 uppercase mb-4">Submission Volume by Department</h3>
-                        <div className="h-64 min-h-[250px]">
-                            {deptChartData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={250}>
+                        <div className="h-64 min-h-[250px] w-full overflow-hidden">
+                            {chartsReady && deptChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={250} debounce={1}>
                                     <BarChart data={deptChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
@@ -224,9 +230,9 @@ const AuditorPortal = () => {
                     {/* Status Donut Chart */}
                     <div className="glass-card p-6 flex flex-col">
                         <h3 className="text-sm font-bold text-gray-300 uppercase mb-4">Current Pipeline Health</h3>
-                        <div className="h-64 min-h-[250px] flex-grow">
-                            {statusChartData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={250}>
+                        <div className="h-64 min-h-[250px] w-full flex-grow overflow-hidden">
+                            {chartsReady && statusChartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={250} debounce={1}>
                                     <PieChart>
                                         <Pie
                                             data={statusChartData}
