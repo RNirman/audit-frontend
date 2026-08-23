@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { ShieldCheck, UserPlus, Trash2, Activity, Server, Users, AlertTriangle, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AdminSettingsPanel from '../components/AdminSettingsPanel';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const AdminPortal = () => {
     const [users, setUsers] = useState([]);
@@ -9,6 +11,7 @@ const AdminPortal = () => {
     const [health, setHealth] = useState(null);
     const [formData, setFormData] = useState({ username: '', password: '', role: 'SME', name: '', companyId: '' });
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, username: null });
 
     // --- FETCH DATA ---
     const fetchData = async () => {
@@ -62,13 +65,19 @@ const AdminPortal = () => {
         }
     };
 
-    const handleDelete = async (username) => {
-        if (window.confirm(`Delete user ${username}?`)) {
-            try {
-                await api.delete(`/users/${username}`);
-                toast.success('User deleted');
-                fetchData();
-            } catch (error) { toast.error("Delete failed"); }
+    const handleDelete = (username) => {
+        setDeleteConfirmation({ isOpen: true, username });
+    };
+
+    const confirmDelete = async () => {
+        const { username } = deleteConfirmation;
+        setDeleteConfirmation({ isOpen: false, username: null });
+        try {
+            await api.delete(`/users/${username}`);
+            toast.success('User deleted');
+            fetchData();
+        } catch (error) {
+            toast.error("Delete failed");
         }
     };
 
@@ -202,7 +211,19 @@ const AdminPortal = () => {
                     </div>
 
                 </div>
+
+                <AdminSettingsPanel />
             </main>
+
+            <ConfirmationModal
+                isOpen={deleteConfirmation.isOpen}
+                title="Delete user account"
+                message={`Are you sure you want to delete ${deleteConfirmation.username}? This action cannot be undone.`}
+                confirmLabel="Delete user"
+                onCancel={() => setDeleteConfirmation({ isOpen: false, username: null })}
+                onConfirm={confirmDelete}
+                danger
+            />
         </div>
     );
 };

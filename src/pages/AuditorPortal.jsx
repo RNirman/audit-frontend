@@ -3,20 +3,27 @@ import api from '../api/axios';
 import CommentsModal from '../components/CommentsModal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DocumentViewerModal from '../components/DocumentViewerModal';
+import RejectionModal from '../components/RejectionModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import io from 'socket.io-client';
-import { ShieldCheck, Search, Eye, Link as LinkIcon, MessageSquare, Check, X, Lock, Server, Upload, ArrowRight, Settings } from 'lucide-react';
+import { ShieldCheck, Search, Eye, Link as LinkIcon, MessageSquare, Check, X, Lock, Server, Upload, ArrowRight, Flag, Settings, Loader2, DownloadIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSettings } from '../context/SettingsContext';
 
 const AuditorPortal = () => {
     const [allAudits, setAllAudits] = useState([]);
     const [history, setHistory] = useState([]);
     const [selectedReportId, setSelectedReportId] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingReportId, setLoadingReportId] = useState(null);
     const [isFetching, setIsFetching] = useState(true);
     const [chatReportId, setChatReportId] = useState(null);
     const [userName] = useState((localStorage.getItem('role') === 'AUDITOR' ? ('Auditor') : ('Gov. Auditor')) || 'Auditor');
     const [viewDocumentId, setViewDocumentId] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
+    const [rejectionModal, setRejectionModal] = useState({ isOpen: false, reportId: null, status: null });
+    const [confirmation, setConfirmation] = useState({ isOpen: false, reportId: null, status: null, reason: null, action: '' });
+    const { settings } = useSettings();
 
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [filterDept, setFilterDept] = useState('ALL');
@@ -90,16 +97,46 @@ const AuditorPortal = () => {
         }
     };
 
-    const updateStatus = async (id, newStatus) => {
+    const updateStatus = async (id, newStatus, reason = null) => {
         setIsLoading(true);
+        setLoadingReportId(id);
         try {
-            await api.put(`/audit/${id}/status`, { status: newStatus });
+            const payload = { status: newStatus };
+            if (reason !== null) {
+                payload.reason = reason;
+            }
+
+            await api.put(`/audit/${id}/status`, payload);
             toast.success(`Status updated to ${newStatus}`);
             await fetchAllAudits();
         } catch (error) {
-            toast.error("Update failed");
+            const message = error.response?.data?.error || 'Update failed';
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+            setLoadingReportId(null);
+            setRejectionModal({ isOpen: false, reportId: null, status: null });
         }
-        setIsLoading(false);
+    };
+
+    const handleRejectClick = (id, status) => {
+        if (settings.requireRejectionReason && status === 'REJECTED') {
+            setRejectionModal({ isOpen: true, reportId: id, status });
+            return;
+        }
+
+        requestStatusConfirmation(id, status);
+    };
+
+    const requestStatusConfirmation = (id, status, reason = null) => {
+        const action = status === 'REJECTED' ? 'reject' : status === 'APPROVED' ? 'approve' : 'pass this report to the next review stage';
+        setConfirmation({ isOpen: true, reportId: id, status, reason, action });
+    };
+
+    const confirmStatusUpdate = () => {
+        const { reportId, status, reason } = confirmation;
+        setConfirmation({ isOpen: false, reportId: null, status: null, reason: null, action: '' });
+        updateStatus(reportId, status, reason);
     };
 
     const viewHistory = async (id) => {
@@ -124,13 +161,14 @@ const AuditorPortal = () => {
         });
     }, [allAudits, filterStatus, filterDept, searchQuery]);
 
-    const { total, approved, rejected, passed_step_1, pending } = useMemo(() => {
+    const { total, approved, rejected, flagged, passed_step_1, pending } = useMemo(() => {
         const total = allAudits.length;
         const approved = allAudits.filter(a => a.status === 'APPROVED').length;
         const rejected = allAudits.filter(a => a.status === 'REJECTED').length;
         const passed_step_1 = allAudits.filter(a => a.status === 'PASSED_STEP_1').length;
-        const pending = total - approved - rejected - passed_step_1;
-        return { total, approved, rejected, passed_step_1, pending };
+        const flagged = allAudits.filter(a => a.status === 'FLAGGED').length;
+        const pending = total - approved - rejected - passed_step_1 - flagged;
+        return { total, approved, rejected, passed_step_1, pending, flagged };
     }, [allAudits]);
 
     const deptChartData = useMemo(() => {
@@ -145,6 +183,7 @@ const AuditorPortal = () => {
         return [
             { name: 'Pending', value: pending, color: '#F59E0B' },
             { name: 'Passed Step 1', value: passed_step_1, color: '#3B82F6' },
+            { name: 'Flagged', value: flagged, color: '#FF8C00'},
             { name: 'Approved', value: approved, color: '#10B981' },
             { name: 'Rejected', value: rejected, color: '#EF4444' }
         ].filter(item => item.value > 0);
@@ -154,6 +193,7 @@ const AuditorPortal = () => {
         switch (status) {
             case 'PENDING': return { title: 'Document Submitted', org: 'SME (Org1)', icon: <Upload size={16} className="text-yellow-400" />, color: 'bg-yellow-500/20', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' };
             case 'PASSED_STEP_1': return { title: 'Initial Review Passed', org: 'Auditor A (Org2)', icon: <ArrowRight size={16} className="text-blue-400" />, color: 'bg-blue-500/20', bg: 'bg-blue-500/10', border: 'border-blue-500/20' };
+            case 'FLAGGED': return { title: 'Issues Flagged', org: 'Auditor A (Org2)', icon: <Flag size={16} className="text-orange-400" />, color: 'bg-orange-500/20', bg: 'bg-orange-500/10', border: 'border-orange-500/20' };
             case 'APPROVED': return { title: 'Final Approval', org: 'Auditor B (Org3)', icon: <Check size={16} className="text-green-400" />, color: 'bg-green-500/20', bg: 'bg-green-500/10', border: 'border-green-500/20' };
             case 'REJECTED': return { title: 'Document Rejected', org: 'Auditing Body', icon: <X size={16} className="text-red-400" />, color: 'bg-red-500/20', bg: 'bg-red-500/10', border: 'border-red-500/20' };
             default: return { title: 'Unknown Action', org: 'System', icon: <Settings size={16} className="text-gray-400" />, color: 'bg-gray-500/20', bg: 'bg-gray-500/10', border: 'border-gray-500/20' };
@@ -190,8 +230,8 @@ const AuditorPortal = () => {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
                     {isFetching ? (
                         <>
-                            {/* Show 5 dummy cards while loading */}
-                            {[1, 2, 3, 4, 5].map(n => <StatCardSkeleton key={n} />)}
+                            {/* Show 6 dummy cards while loading */}
+                            {[1, 2, 3, 4, 5, 6].map(n => <StatCardSkeleton key={n} />)}
                         </>
                     ) : (
                         <>
@@ -199,6 +239,7 @@ const AuditorPortal = () => {
                             <StatCard title="Total Reports" value={total} color="bg-indigo-600/20" textColor="text-indigo-400" border="border border-indigo-500/30" />
                             <StatCard title="Pending Review" value={pending} color="glass-card" textColor="text-orange-400" border="border-l-4 border-orange-500/50" />
                             <StatCard title="Passed Step 1" value={passed_step_1} color="glass-card" textColor="text-blue-400" border="border-l-4 border-blue-500/50" />
+                            <StatCard title="Flagged" value={flagged} color="glass-card" textColor="text-orange-400" border="border-1-4 border-orange-500/50" />
                             <StatCard title="Approved" value={approved} color="glass-card" textColor="text-green-400" border="border-l-4 border-green-500/50" />
                             <StatCard title="Rejected" value={rejected} color="glass-card" textColor="text-red-400" border="border-l-4 border-red-500/50" />
                         </>
@@ -285,7 +326,7 @@ const AuditorPortal = () => {
                     </div>
 
                     <div className="flex bg-gray-900/50 border border-gray-800 p-1 rounded-lg">
-                        {['ALL', 'PENDING', 'PASSED_STEP_1', 'APPROVED', 'REJECTED'].map((status) => (
+                        {['ALL', 'PENDING', 'PASSED_STEP_1', 'FLAGGED', 'APPROVED', 'REJECTED'].map((status) => (
                             <button
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
@@ -300,7 +341,6 @@ const AuditorPortal = () => {
                     </div>
                 </div>
 
-                {/* 5. MAIN DATA TABLE */}
                 {/* 5. MAIN DATA TABLE */}
                 <div className="glass-card overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/50 flex justify-between items-center">
@@ -343,52 +383,61 @@ const AuditorPortal = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right space-x-2">
                                                 <ActionButton onClick={() => setViewDocumentId(audit.id)} icon={<Eye size={16} />} title="View Document" />
-                                                <ActionButton onClick={() => viewHistory(audit.id)} icon={<LinkIcon size={16} />} title="Blockchain Explorer" />
-                                                <ActionButton onClick={() => setChatReportId(audit.id)} icon={<MessageSquare size={16} />} title="Discuss" />
+                                                {settings.allowDownloads && (
+                                                    <ActionButton onClick={() => downloadReport(audit.id, audit.companyId, audit.auditPeriod)} icon={<DownloadIcon size={16} />} title="Download Document" />
+                                                )}
+                                                {settings.showLedger && (
+                                                    <ActionButton onClick={() => viewHistory(audit.id)} icon={<LinkIcon size={16} />} title="Blockchain Explorer" />
+                                                )}
+                                                {settings.enableChat && (
+                                                    <ActionButton onClick={() => setChatReportId(audit.id)} icon={<MessageSquare size={16} />} title="Discuss" />
+                                                )}
 
                                                 {/* LOGIC FOR AUDITOR A (ORG 2) */}
                                                 {userRole === 'AUDITOR' && audit.status === 'PENDING' && (
                                                     <>
                                                         <button
-                                                            onClick={() => updateStatus(audit.id, 'PASSED_STEP_1')}
-                                                            className="p-2 rounded-full hover:bg-blue-100 text-blue-600 transition-all"
+                                                            onClick={() => requestStatusConfirmation(audit.id, 'PASSED_STEP_1')}
+                                                            disabled={isLoading}
+                                                            className={`p-2 rounded-full text-blue-600 transition-all inline-flex items-center justify-center ${isLoading ? 'cursor-not-allowed opacity-60' : 'hover:bg-blue-100'}`}
                                                             title="Pass Initial Review"
                                                         >
-                                                            <ArrowRight size={14} className="mr-1 inline" /> Pass Step 1
+                                                            {isLoading && loadingReportId === audit.id ? <Loader2 size={14} className="mr-1 animate-spin" /> : <ArrowRight size={14} className="mr-1" />}
+                                                            {isLoading && loadingReportId === audit.id ? 'Updating...' : 'Pass Step 1'}
                                                         </button>
                                                         <button
-                                                            onClick={() => updateStatus(audit.id, 'REJECTED')}
-                                                            className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-all inline-flex items-center justify-center"
-                                                            title="Reject"
+                                                            onClick={() => updateStatus(audit.id, 'FLAGGED')}
+                                                            className="p-2 rounded-full hover:bg-orange-100 text-orange-600 transition-all"
+                                                            title="Flag Issues"
                                                         >
-                                                            <X size={14} />
+                                                            <Flag size={14} className="mr-1" />
                                                         </button>
                                                     </>
                                                 )}
 
                                                 {/* LOGIC FOR AUDITOR B (ORG 3) */}
-                                                {userRole === 'GOV_AUDITOR' && audit.status === 'PASSED_STEP_1' && (
+                                                {userRole === 'GOV_AUDITOR' && (audit.status === 'PASSED_STEP_1' || audit.status === 'FLAGGED') && (
                                                     <>
                                                         <button
                                                             onClick={() => updateStatus(audit.id, 'APPROVED')}
                                                             className="p-2 rounded-full hover:bg-green-100 text-green-600 transition-all"
                                                             title="Finalize & Approve"
                                                         >
-                                                            <Check size={14} className="mr-1 inline" /> Finalize
+                                                            ✅ Finalize
                                                         </button>
                                                         <button
-                                                            onClick={() => updateStatus(audit.id, 'REJECTED')}
-                                                            className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-all inline-flex items-center justify-center"
+                                                            onClick={() => handleRejectClick(audit.id, 'REJECTED')}
+                                                            className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-all"
                                                             title="Reject Final"
                                                         >
-                                                            <X size={14} />
+                                                            ❌ Reject
                                                         </button>
                                                     </>
                                                 )}
 
                                                 {/* SHOW LOCK ICON IF NOT YOUR TURN */}
                                                 {((userRole === 'AUDITOR' && audit.status !== 'PENDING') ||
-                                                    (userRole === 'GOV_AUDITOR' && audit.status !== 'PASSED_STEP_1')) && (
+                                                    (userRole === 'GOV_AUDITOR' && audit.status !== 'PASSED_STEP_1' && audit.status !== 'FLAGGED')) && (
                                                         <span className="text-gray-300 text-xs cursor-not-allowed inline-flex items-center justify-center" title="Action not available at this stage"><Lock size={12} className="mr-1 inline" /> Locked</span>
                                                     )}
                                             </td>
@@ -502,6 +551,25 @@ const AuditorPortal = () => {
                 />
             )}
 
+            {rejectionModal.isOpen && (
+                <RejectionModal
+                    onClose={() => setRejectionModal({ isOpen: false, reportId: null, status: null })}
+                    onSubmit={(reason) => {
+                        setRejectionModal({ isOpen: false, reportId: null, status: null });
+                        requestStatusConfirmation(rejectionModal.reportId, rejectionModal.status, reason);
+                    }}
+                />
+            )}
+
+            <ConfirmationModal
+                isOpen={confirmation.isOpen}
+                title="Confirm report status change"
+                message={`Are you sure you want to ${confirmation.action} this report? This action will be recorded on the audit ledger.`}
+                confirmLabel="Continue"
+                onCancel={() => setConfirmation({ isOpen: false, reportId: null, status: null, reason: null, action: '' })}
+                onConfirm={confirmStatusUpdate}
+                danger={confirmation.status === 'REJECTED'}
+            />
 
         </div>
     );
@@ -520,6 +588,7 @@ const StatusBadge = memo(({ status }) => {
     const styles = {
         APPROVED: "bg-green-500/20 text-green-400 border-green-500/30",
         PASSED_STEP_1: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        FLAGGED: "bg-orange-500/2 text-orange-400 border-orange-500/30",
         REJECTED: "bg-red-500/20 text-red-400 border-red-500/30",
         PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
     };

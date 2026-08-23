@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Papa from 'papaparse';
+import { useSettings } from '../context/SettingsContext';
 
 const DocumentViewerModal = ({ reportId, onClose }) => {
     const [fileUrl, setFileUrl] = useState(null);
@@ -8,6 +9,7 @@ const DocumentViewerModal = ({ reportId, onClose }) => {
     const [csvData, setCsvData] = useState({ headers: [], rows: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { settings } = useSettings();
 
     useEffect(() => {
         const fetchAndRenderFile = async () => {
@@ -16,7 +18,10 @@ const DocumentViewerModal = ({ reportId, onClose }) => {
                 
                 // 1. Fetch the encrypted file data
                 const response = await axios.get(`http://localhost:4000/api/audit/${reportId}/download`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'X-Viewer-Request': 'true'
+                    },
                     responseType: 'blob'
                 });
 
@@ -143,13 +148,17 @@ const DocumentViewerModal = ({ reportId, onClose }) => {
                                     <span className="text-sm font-bold text-gray-600 flex items-center gap-2">
                                         <span>📊</span> Data Preview (Parsed {csvData.rows.length} rows)
                                     </span>
-                                    <a 
-                                        href={fileUrl} 
-                                        download={`Export_${reportId}.csv`}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
-                                    >
-                                        <span>📥</span> Download Original File
-                                    </a>
+                                    {settings.allowDownloads ? (
+                                        <a
+                                            href={fileUrl}
+                                            download={`Export_${reportId}.csv`}
+                                            className="bg-blue-600 text-white px-4 py-2 rounded font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
+                                        >
+                                            <span>📥</span> Download Original File
+                                        </a>
+                                    ) : (
+                                        <span className="text-xs font-semibold text-gray-500">View-only mode</span>
+                                    )}
                                 </div>
                                 
                                 <div className="flex-grow overflow-auto p-0">
@@ -191,15 +200,19 @@ const DocumentViewerModal = ({ reportId, onClose }) => {
                                 <span className="text-6xl mb-4">🗃️</span>
                                 <h4 className="text-xl font-bold text-gray-800 mb-2">Binary File Format</h4>
                                 <p className="text-sm mb-6">
-                                    This file format (.xlsx / .docx) cannot be previewed natively in the browser without risking formatting errors. You must download it to view the contents securely.
+                                    This file format (.xlsx / .docx) cannot be previewed natively in the browser without risking formatting errors.
                                 </p>
-                                <a 
-                                    href={fileUrl} 
-                                    download={`Secure_Export_${reportId}`}
-                                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2"
-                                >
-                                    <span>📥</span> Download Decrypted File
-                                </a>
+                                {settings.allowDownloads ? (
+                                    <a
+                                        href={fileUrl}
+                                        download={`Secure_Export_${reportId}`}
+                                        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                    >
+                                        <span>📥</span> Download Decrypted File
+                                    </a>
+                                ) : (
+                                    <p className="text-sm font-semibold text-gray-500">Downloads are disabled by the administrator.</p>
+                                )}
                             </div>
 
                         )

@@ -17,6 +17,7 @@ const SmePortal = () => {
     const [userName] = useState(localStorage.getItem('name') || 'User');
     const [uploadFile, setUploadFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [resubmittingReportId, setResubmittingReportId] = useState(null);
 
     // --- HANDLERS ---
     const onDrop = useCallback((acceptedFiles) => {
@@ -89,6 +90,8 @@ const SmePortal = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        setResubmittingReportId(auditId);
+
         // 1. Calculate new hash
         const reader = new FileReader();
         reader.onload = async (evt) => {
@@ -108,6 +111,8 @@ const SmePortal = () => {
                 fetchMyAudits(); // Refresh table
             } catch (err) {
                 toast.error("Error resubmitting report.");
+            } finally {
+                setResubmittingReportId(null);
             }
         };
         reader.readAsArrayBuffer(file);
@@ -239,7 +244,7 @@ const SmePortal = () => {
                                         ${isSubmitting ? 'bg-gray-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/20 active:scale-95'}
                                     `}
                                 >
-                                    {isSubmitting ? 'Processing...' : 'Submit Securely'}
+                                    {isSubmitting ? 'Submitting document...' : 'Submit Securely'}
                                 </button>
 
                                 {/* Feedback Message */}
@@ -291,9 +296,9 @@ const SmePortal = () => {
                                                             />
                                                             <label
                                                                 htmlFor={`resubmit-${audit.id}`}
-                                                                className="text-xs bg-gray-800 text-white px-3 py-1 rounded cursor-pointer hover:bg-black transition-colors"
+                                                                className={`text-xs bg-gray-800 text-white px-3 py-1 rounded transition-colors ${resubmittingReportId === audit.id ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-black'}`}
                                                             >
-                                                                Fix & Resubmit
+                                                                {resubmittingReportId === audit.id ? 'Resubmitting document...' : 'Fix & Resubmit'}
                                                             </label>
                                                         </div>
                                                     )}
