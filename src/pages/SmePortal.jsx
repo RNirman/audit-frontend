@@ -17,7 +17,6 @@ const SmePortal = () => {
     const [userName] = useState(localStorage.getItem('name') || 'User');
     const [uploadFile, setUploadFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [resubmittingReportId, setResubmittingReportId] = useState(null);
 
     // --- HANDLERS ---
     const onDrop = useCallback((acceptedFiles) => {
@@ -84,38 +83,6 @@ const SmePortal = () => {
             setSubmitStatus(null);
         }
         setIsSubmitting(false);
-    };
-
-    const handleResubmit = async (auditId, e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setResubmittingReportId(auditId);
-
-        // 1. Calculate new hash
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-            const arrayBuffer = evt.target.result;
-            const wordBuffer = CryptoJS.lib.WordArray.create(arrayBuffer);
-            const newHash = CryptoJS.SHA256(wordBuffer).toString();
-
-            // 2. Prepare Form Data
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('reportHash', newHash);
-
-            try {
-                // 3. Send to backend
-                await api.put(`/audit/${auditId}/resubmit`, formData);
-                toast.success("Report Resubmitted Successfully!");
-                fetchMyAudits(); // Refresh table
-            } catch (err) {
-                toast.error("Error resubmitting report.");
-            } finally {
-                setResubmittingReportId(null);
-            }
-        };
-        reader.readAsArrayBuffer(file);
     };
 
     const fetchMyAudits = async () => {
@@ -286,22 +253,6 @@ const SmePortal = () => {
                                                 <td className="px-6 py-4 text-sm text-gray-500">{new Date(audit.submissionDate).toLocaleDateString()}</td>
                                                 <td className="px-6 py-4 text-right flex flex-col items-end gap-2">
                                                     <StatusBadge status={audit.status} />
-                                                    {audit.status === 'REJECTED' && (
-                                                        <div className="relative">
-                                                            <input
-                                                                type="file"
-                                                                id={`resubmit-${audit.id}`}
-                                                                className="hidden"
-                                                                onChange={(e) => handleResubmit(audit.id, e)}
-                                                            />
-                                                            <label
-                                                                htmlFor={`resubmit-${audit.id}`}
-                                                                className={`text-xs bg-gray-800 text-white px-3 py-1 rounded transition-colors ${resubmittingReportId === audit.id ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-black'}`}
-                                                            >
-                                                                {resubmittingReportId === audit.id ? 'Resubmitting document...' : 'Fix & Resubmit'}
-                                                            </label>
-                                                        </div>
-                                                    )}
                                                 </td>
                                                 <td>
                                                     <ActionButton
