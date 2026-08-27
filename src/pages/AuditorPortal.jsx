@@ -227,7 +227,7 @@ const AuditorPortal = () => {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                 {/* 2. STATS DASHBOARD */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     {isFetching ? (
                         <>
                             {/* Show 6 dummy cards while loading */}
