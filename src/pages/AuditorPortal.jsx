@@ -406,8 +406,9 @@ const AuditorPortal = () => {
                                                             {isLoading && loadingReportId === audit.id ? 'Updating...' : 'Pass Step 1'}
                                                         </button>
                                                         <button
-                                                            onClick={() => updateStatus(audit.id, 'FLAGGED')}
-                                                            className="p-2 rounded-full hover:bg-orange-100 text-orange-600 transition-all"
+                                                            onClick={() => requestStatusConfirmation(audit.id, 'FLAGGED')}
+                                                            disabled={isLoading}
+                                                            className={`p-2 rounded-full text-orange-600 transition-all inline-flex items-center justify-center ${isLoading ? 'cursor-not-allowed opacity-60' : 'hover:bg-orange-100'}`}
                                                             title="Flag Issues"
                                                         >
                                                             <Flag size={14} className="mr-1" />
@@ -419,15 +420,17 @@ const AuditorPortal = () => {
                                                 {userRole === 'GOV_AUDITOR' && (audit.status === 'PASSED_STEP_1' || audit.status === 'FLAGGED') && (
                                                     <>
                                                         <button
-                                                            onClick={() => updateStatus(audit.id, 'APPROVED')}
-                                                            className="p-2 rounded-full hover:bg-green-100 text-green-600 transition-all"
+                                                            onClick={() => requestStatusConfirmation(audit.id, 'APPROVED')}
+                                                            disabled={isLoading}
+                                                            className={`p-2 rounded-full text-green-600 transition-all inline-flex items-center justify-center ${isLoading ? 'cursor-not-allowed opacity-60' : 'hover:bg-green-100'}`}
                                                             title="Finalize & Approve"
                                                         >
                                                             ✅ Finalize
                                                         </button>
                                                         <button
                                                             onClick={() => handleRejectClick(audit.id, 'REJECTED')}
-                                                            className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-all"
+                                                            disabled={isLoading}
+                                                            className={`p-2 rounded-full text-red-600 transition-all inline-flex items-center justify-center ${isLoading ? 'cursor-not-allowed opacity-60' : 'hover:bg-red-100'}`}
                                                             title="Reject Final"
                                                         >
                                                             ❌ Reject
