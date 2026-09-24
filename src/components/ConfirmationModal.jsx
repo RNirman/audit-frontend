@@ -23,7 +23,7 @@ const ConfirmationModal = ({
                 <div className="flex items-start gap-3">
                     <AlertTriangle className={danger ? 'text-red-400' : 'text-yellow-400'} size={24} />
                     <div>
-                        <h3 id="confirmation-title" className="text-lg font-bold text-white">{title}</h3>
+                        <h3 id="confirmation-title" className="text-lg font-bold text-white theme-modal-title">{title}</h3>
                         <p className="text-sm text-gray-400 mt-2">{message}</p>
                     </div>
                 </div>
@@ -32,7 +32,7 @@ const ConfirmationModal = ({
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+                        className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 theme-modal-secondary hover:bg-gray-800 transition-colors"
                     >
                         Cancel
                     </button>

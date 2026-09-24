@@ -4,6 +4,7 @@ import { ShieldCheck, UserPlus, Trash2, Activity, Server, Users, AlertTriangle, 
 import toast from 'react-hot-toast';
 import AdminSettingsPanel from '../components/AdminSettingsPanel';
 import ConfirmationModal from '../components/ConfirmationModal';
+import ThemeToggle from '../components/ThemeToggle';
 
 const AdminPortal = () => {
     const [users, setUsers] = useState([]);
@@ -93,6 +94,7 @@ const AdminPortal = () => {
                             <h1 className="text-xl font-bold text-gray-100 tracking-wider">System<span className="text-indigo-400">Admin</span></h1>
                         </div>
                         <div className="flex items-center space-x-4">
+                            <ThemeToggle />
                             <button onClick={() => { localStorage.clear(); window.location.href = '/'; }} className="bg-gray-800 hover:bg-gray-700 text-gray-100 border border-gray-700 px-3 py-1 rounded text-sm transition-colors">Logout</button>
                         </div>
                     </div>

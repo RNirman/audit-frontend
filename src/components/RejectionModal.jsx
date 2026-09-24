@@ -18,7 +18,7 @@ const RejectionModal = ({ onClose, onSubmit }) => {
                 <div className="flex items-center justify-between mb-5">
                     <div>
                         <p className="text-xs uppercase tracking-[0.25em] text-red-400 font-semibold">Mandatory rejection reason</p>
-                        <h3 className="text-xl font-bold text-white mt-2">Explain the rejection</h3>
+                        <h3 className="text-xl font-bold text-white theme-modal-title mt-2">Explain the rejection</h3>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl transition-colors">&times;</button>
                 </div>
@@ -34,7 +34,7 @@ const RejectionModal = ({ onClose, onSubmit }) => {
                 <div className="mt-5 flex justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+                        className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 theme-modal-secondary hover:bg-gray-800 transition-colors"
                     >
                         Cancel
                     </button>

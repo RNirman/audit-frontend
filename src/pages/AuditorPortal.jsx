@@ -9,6 +9,7 @@ import io from 'socket.io-client';
 import { ShieldCheck, Search, Eye, Link as LinkIcon, MessageSquare, Check, X, Lock, Server, Upload, ArrowRight, Flag, Settings, Loader2, DownloadIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSettings } from '../context/SettingsContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 const AuditorPortal = () => {
     const [allAudits, setAllAudits] = useState([]);
@@ -23,7 +24,7 @@ const AuditorPortal = () => {
     const [toastMessage, setToastMessage] = useState(null);
     const [rejectionModal, setRejectionModal] = useState({ isOpen: false, reportId: null, status: null });
     const [confirmation, setConfirmation] = useState({ isOpen: false, reportId: null, status: null, reason: null, action: '' });
-    const { settings } = useSettings();
+    const { settings, theme } = useSettings();
 
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [filterDept, setFilterDept] = useState('ALL');
@@ -212,6 +213,7 @@ const AuditorPortal = () => {
                             <h1 className="text-xl font-bold text-gray-100">AuditControl <span className="text-indigo-400">Pro</span></h1>
                         </div>
                         <div className="flex items-center gap-4">
+                            <ThemeToggle />
                             <span className="text-sm text-gray-500 hidden md:inline">Welcome, {userName}</span>
                             <button
                                 onClick={() => { localStorage.clear(); window.location.href = '/'; }}
@@ -258,7 +260,7 @@ const AuditorPortal = () => {
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} allowDecimals={false} />
-                                        <RechartsTooltip cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} contentStyle={{ backgroundColor: '#111827', borderRadius: '8px', border: '1px solid #374151', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }} itemStyle={{ color: '#e5e7eb' }} />
+                                        <RechartsTooltip cursor={{ fill: theme === 'light' ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.1)' }} contentStyle={{ backgroundColor: theme === 'light' ? '#ffffff' : '#111827', borderRadius: '8px', border: `1px solid ${theme === 'light' ? '#d1d5db' : '#374151'}`, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.15)' }} labelStyle={{ color: theme === 'light' ? '#374151' : '#e5e7eb' }} itemStyle={{ color: theme === 'light' ? '#4b5563' : '#e5e7eb' }} />
                                         <Bar dataKey="count" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={40} />
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -287,7 +289,7 @@ const AuditorPortal = () => {
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
-                                        <RechartsTooltip contentStyle={{ backgroundColor: '#111827', borderRadius: '8px', border: '1px solid #374151', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)' }} itemStyle={{ color: '#e5e7eb' }} />
+                                        <RechartsTooltip contentStyle={{ backgroundColor: theme === 'light' ? '#ffffff' : '#111827', borderRadius: '8px', border: `1px solid ${theme === 'light' ? '#d1d5db' : '#374151'}`, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.15)' }} labelStyle={{ color: theme === 'light' ? '#374151' : '#e5e7eb' }} itemStyle={{ color: theme === 'light' ? '#4b5563' : '#e5e7eb' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             ) : (

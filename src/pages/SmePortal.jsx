@@ -5,6 +5,7 @@ import CommentsModal from '../components/CommentsModal';
 import { Building, Upload, FileText, MessageSquare, Lock, FolderOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
+import ThemeToggle from '../components/ThemeToggle';
 
 const SmePortal = () => {
     const [department, setDepartment] = useState('Finance');
@@ -113,6 +114,7 @@ const SmePortal = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
+                            <ThemeToggle />
                             <span className="text-sm text-gray-500 hidden md:inline">Welcome, {userName}</span>
                             <button
                                 onClick={() => { localStorage.clear(); window.location.href = '/'; }}
@@ -133,7 +135,7 @@ const SmePortal = () => {
                     <div className="lg:col-span-1">
                         <div className="glass-card overflow-hidden">
                             <div className="px-6 py-4 bg-gradient-to-r from-indigo-900 to-indigo-800 border-b border-indigo-700/50">
-                                <h2 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+                                <h2 className="text-lg font-bold text-white theme-submit-heading flex items-center gap-2">
                                     <Upload size={18} className="text-indigo-400" /> Submit Report
                                 </h2>
                                 <p className="text-blue-100 text-xs mt-1">Upload financial records for audit</p>
@@ -198,7 +200,7 @@ const SmePortal = () => {
                                     {fileHash && (
                                         <div className="mt-2 bg-indigo-500/10 p-2 rounded border border-indigo-500/20 flex items-start gap-2">
                                             <span className="text-xs font-bold text-indigo-400 mt-0.5">SHA256:</span>
-                                            <code className="text-[10px] text-indigo-200 break-all leading-tight">{fileHash}</code>
+                                            <code className="text-[10px] text-indigo-200 theme-hash-value break-all leading-tight">{fileHash}</code>
                                         </div>
                                     )}
                                 </div>
