@@ -39,20 +39,17 @@ const SmePortal = () => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, multiple: false });
     const [chatReportId, setChatReportId] = useState(null);
 
-    const getWeekPeriod = () => {
+    const getDailyPeriod = () => {
         const now = new Date();
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-        const pastDaysOfYear = (now - startOfYear) / 86400000;
-        
-        const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
         const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
 
-        return `Week ${weekNumber}, ${year}`;
+        return `${year}-${month}-${day}`;
     };
 
     useEffect(() => {
-        setPeriod(getWeekPeriod());
+        setPeriod(getDailyPeriod());
     }, []);
 
     const handleSubmit = async () => {
@@ -109,7 +106,7 @@ const SmePortal = () => {
                         <div className="flex items-center gap-3">
                             <Building className="text-indigo-400" size={28} />
                             <div>
-                                <h1 className="text-lg font-bold text-gray-100 leading-tight">SME Portal</h1>
+                                <h1 className="text-lg font-bold text-gray-100 leading-tight">Vendor Portal</h1>
                                 <p className="text-xs text-indigo-400 font-medium">{companyId || 'Company ID Not Assigned'}</p>
                             </div>
                         </div>
@@ -173,10 +170,9 @@ const SmePortal = () => {
 
                                 {/* Period */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Audit Period</label>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Audit Date</label>
                                     <input
-                                        type="text"
-                                        placeholder="e.g. Week 20, 2026"
+                                        type="date"
                                         value={period}
                                         onChange={e => setPeriod(e.target.value)}
                                         className="w-full bg-gray-900/50 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none placeholder-gray-500"
@@ -282,7 +278,7 @@ const SmePortal = () => {
                 <CommentsModal
                     reportId={chatReportId}
                     onClose={() => setChatReportId(null)}
-                    currentUserRole="SME"
+                    currentUserRole="VENDOR"
                 />
             )}
         </div>

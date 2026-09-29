@@ -16,8 +16,8 @@ const Home = () => {
     // Auto-redirect if already logged in
     useEffect(() => {
         if (token && role) {
-            if (role === 'SME') navigate('/sme');
-            else if (role === 'AUDITOR' || role === 'GOV_AUDITOR') navigate('/auditor');
+            if (role === 'VENDOR') navigate('/sme');
+            else if (role === 'FIRST_AUDITOR' || role === 'SECOND_AUDITOR') navigate('/auditor');
             else if (role === 'ADMIN') navigate('/admin');
         }
     }, [token, role, navigate]);
@@ -35,13 +35,13 @@ const Home = () => {
             // 2. Redirect based on Role
             // Small delay to show the loading animation (UX best practice)
             setTimeout(() => {
-                if (res.data.role === 'SME') {
+                if (res.data.role === 'VENDOR') {
                     navigate('/sme');
-                } else if (res.data.role === 'AUDITOR') {
+                } else if (res.data.role === 'FIRST_AUDITOR') {
                     navigate('/auditor');
                 } else if (res.data.role === 'ADMIN') {
                     navigate('/admin');
-                } else if (res.data.role === 'GOV_AUDITOR') {
+                } else if (res.data.role === 'SECOND_AUDITOR') {
                     navigate('/auditor');
                 }
             }, 500);

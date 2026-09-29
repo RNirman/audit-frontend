@@ -19,7 +19,7 @@ const AuditorPortal = () => {
     const [loadingReportId, setLoadingReportId] = useState(null);
     const [isFetching, setIsFetching] = useState(true);
     const [chatReportId, setChatReportId] = useState(null);
-    const [userName] = useState((localStorage.getItem('role') === 'AUDITOR' ? ('Auditor') : ('Gov. Auditor')) || 'Auditor');
+    const [userName] = useState((localStorage.getItem('role') === 'FIRST_AUDITOR' ? ('First Auditor') : ('Second Auditor')) || 'First Auditor');
     const [viewDocumentId, setViewDocumentId] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
     const [rejectionModal, setRejectionModal] = useState({ isOpen: false, reportId: null, status: null });
@@ -192,7 +192,7 @@ const AuditorPortal = () => {
 
     const getStepDetails = (status) => {
         switch (status) {
-            case 'PENDING': return { title: 'Document Submitted', org: 'SME (Org1)', icon: <Upload size={16} className="text-yellow-400" />, color: 'bg-yellow-500/20', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' };
+            case 'PENDING': return { title: 'Document Submitted', org: 'Vendor (Org1)', icon: <Upload size={16} className="text-yellow-400" />, color: 'bg-yellow-500/20', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' };
             case 'PASSED_STEP_1': return { title: 'Initial Review Passed', org: 'Auditor A (Org2)', icon: <ArrowRight size={16} className="text-blue-400" />, color: 'bg-blue-500/20', bg: 'bg-blue-500/10', border: 'border-blue-500/20' };
             case 'FLAGGED': return { title: 'Issues Flagged', org: 'Auditor A (Org2)', icon: <Flag size={16} className="text-orange-400" />, color: 'bg-orange-500/20', bg: 'bg-orange-500/10', border: 'border-orange-500/20' };
             case 'APPROVED': return { title: 'Final Approval', org: 'Auditor B (Org3)', icon: <Check size={16} className="text-green-400" />, color: 'bg-green-500/20', bg: 'bg-green-500/10', border: 'border-green-500/20' };
@@ -396,7 +396,7 @@ const AuditorPortal = () => {
                                                 )}
 
                                                 {/* LOGIC FOR AUDITOR A (ORG 2) */}
-                                                {userRole === 'AUDITOR' && audit.status === 'PENDING' && (
+                                                {userRole === 'FIRST_AUDITOR' && audit.status === 'PENDING' && (
                                                     <>
                                                         <button
                                                             onClick={() => requestStatusConfirmation(audit.id, 'PASSED_STEP_1')}
@@ -419,7 +419,7 @@ const AuditorPortal = () => {
                                                 )}
 
                                                 {/* LOGIC FOR AUDITOR B (ORG 3) */}
-                                                {userRole === 'GOV_AUDITOR' && (audit.status === 'PASSED_STEP_1' || audit.status === 'FLAGGED') && (
+                                                {userRole === 'SECOND_AUDITOR' && (audit.status === 'PASSED_STEP_1' || audit.status === 'FLAGGED') && (
                                                     <>
                                                         <button
                                                             onClick={() => requestStatusConfirmation(audit.id, 'APPROVED')}
@@ -441,8 +441,8 @@ const AuditorPortal = () => {
                                                 )}
 
                                                 {/* SHOW LOCK ICON IF NOT YOUR TURN */}
-                                                {((userRole === 'AUDITOR' && audit.status !== 'PENDING') ||
-                                                    (userRole === 'GOV_AUDITOR' && audit.status !== 'PASSED_STEP_1' && audit.status !== 'FLAGGED')) && (
+                                                {((userRole === 'FIRST_AUDITOR' && audit.status !== 'PENDING') ||
+                                                    (userRole === 'SECOND_AUDITOR' && audit.status !== 'PASSED_STEP_1' && audit.status !== 'FLAGGED')) && (
                                                         <span className="text-gray-300 text-xs cursor-not-allowed inline-flex items-center justify-center" title="Action not available at this stage"><Lock size={12} className="mr-1 inline" /> Locked</span>
                                                     )}
                                             </td>

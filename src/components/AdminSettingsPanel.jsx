@@ -63,13 +63,13 @@ const AdminSettingsPanel = () => {
                 />
                 <ToggleRow 
                     title="Blind Auditing Mode" 
-                    description="Anonymizes SME company names and IDs for Org2 Auditors to prevent bias during initial review."
+                    description="Anonymizes vendor company names and IDs for Org2 Auditors to prevent bias during initial review."
                     checked={localSettings.blindAudit} 
                     onChange={() => handleToggle('blindAudit')} 
                 />
                 <ToggleRow 
                     title="Enable Direct Chat" 
-                    description="Allows Auditors and SMEs to communicate via the encrypted off-chain comment system."
+                    description="Allows Auditors and vendors to communicate via the encrypted off-chain comment system."
                     checked={localSettings.enableChat} 
                     onChange={() => handleToggle('enableChat')} 
                 />

@@ -10,7 +10,7 @@ const AdminPortal = () => {
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
     const [health, setHealth] = useState(null);
-    const [formData, setFormData] = useState({ username: '', password: '', role: 'SME', name: '', companyId: '' });
+    const [formData, setFormData] = useState({ username: '', password: '', role: 'VENDOR', name: '', companyId: '' });
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, username: null });
 
@@ -58,7 +58,7 @@ const AdminPortal = () => {
         try {
             await api.post('/users', formData);
             toast.success('User Created Successfully!');
-            setFormData({ username: '', password: '', role: 'SME', name: '', companyId: '' });
+            setFormData({ username: '', password: '', role: 'VENDOR', name: '', companyId: '' });
             fetchData();
             setTimeout(() => setIsFormOpen(false), 1500);
         } catch (error) {
@@ -146,10 +146,10 @@ const AdminPortal = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Role</label>
                                 <select name="role" value={formData.role} onChange={handleChange} className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                                    <option value="SME">SME (Client)</option><option value="AUDITOR">Auditor</option><option value="GOV_AUDITOR">Gov. Auditor</option><option value="ADMIN">Administrator</option>
+                                    <option value="VENDOR">Vendor</option><option value="FIRST_AUDITOR">First Auditor</option><option value="SECOND_AUDITOR">Second Auditor</option><option value="ADMIN">Administrator</option>
                                 </select>
                             </div>
-                            {formData.role === 'SME' && (
+                            {formData.role === 'VENDOR' && (
                                 <div className="md:col-span-2 bg-indigo-500/10 p-4 rounded-lg border border-indigo-500/20">
                                     <label className="block text-sm font-bold text-indigo-400 mb-1">Assign Company ID</label>
                                     <input name="companyId" value={formData.companyId} onChange={handleChange} required className="w-full px-4 py-2 bg-gray-900/50 border border-gray-700 text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none placeholder-gray-600" placeholder="e.g. COMP_001" />
@@ -231,7 +231,7 @@ const AdminPortal = () => {
 };
 
 const RoleBadge = ({ role }) => {
-    const styles = { ADMIN: "bg-gray-800 border border-gray-700 text-gray-100", AUDITOR: "bg-purple-500/20 border border-purple-500/30 text-purple-400", SME: "bg-blue-500/20 border border-blue-500/30 text-blue-400" };
+    const styles = { ADMIN: "bg-gray-800 border border-gray-700 text-gray-100", FIRST_AUDITOR: "bg-purple-500/20 border border-purple-500/30 text-purple-400", SECOND_AUDITOR:"bg-purple-500/20 border border-purple-500/30 text-purple-400", VENDOR: "bg-blue-500/20 border border-blue-500/30 text-blue-400" };
     return <span className={`px-2 py-1 rounded text-xs font-bold ${styles[role] || "bg-gray-800 text-gray-300 border-gray-700"}`}>{role}</span>;
 };
 

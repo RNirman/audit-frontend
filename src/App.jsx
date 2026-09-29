@@ -27,12 +27,12 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/sme" element={
-              <ProtectedRoute allowedRoles={['SME']}>
+              <ProtectedRoute allowedRoles={['VENDOR']}>
                 <SmePortal />
               </ProtectedRoute>
             } />
             <Route path="/auditor" element={
-              <ProtectedRoute allowedRoles={['AUDITOR', 'GOV_AUDITOR']}>
+              <ProtectedRoute allowedRoles={['FIRST_AUDITOR', 'SECOND_AUDITOR']}>
                 <AuditorPortal />
               </ProtectedRoute>
             } />
