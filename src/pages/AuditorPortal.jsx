@@ -184,7 +184,7 @@ const AuditorPortal = () => {
         return [
             { name: 'Pending', value: pending, color: '#F59E0B' },
             { name: 'Passed Step 1', value: passed_step_1, color: '#3B82F6' },
-            { name: 'Flagged', value: flagged, color: '#FF8C00'},
+            { name: 'Flagged', value: flagged, color: '#EC4899' },
             { name: 'Approved', value: approved, color: '#10B981' },
             { name: 'Rejected', value: rejected, color: '#EF4444' }
         ].filter(item => item.value > 0);
@@ -241,7 +241,7 @@ const AuditorPortal = () => {
                             <StatCard title="Total Reports" value={total} color="bg-indigo-600/20" textColor="text-indigo-400" border="border border-indigo-500/30" />
                             <StatCard title="Pending Review" value={pending} color="glass-card" textColor="text-orange-400" border="border-l-4 border-orange-500/50" />
                             <StatCard title="Passed Step 1" value={passed_step_1} color="glass-card" textColor="text-blue-400" border="border-l-4 border-blue-500/50" />
-                            <StatCard title="Flagged" value={flagged} color="glass-card" textColor="text-orange-400" border="border-1-4 border-orange-500/50" />
+                            <StatCard title="Flagged" value={flagged} color="glass-card" textColor="text-pink-400" border="border-1-4 border-pink-500/50" />
                             <StatCard title="Approved" value={approved} color="glass-card" textColor="text-green-400" border="border-l-4 border-green-500/50" />
                             <StatCard title="Rejected" value={rejected} color="glass-card" textColor="text-red-400" border="border-l-4 border-red-500/50" />
                         </>
