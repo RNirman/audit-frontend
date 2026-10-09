@@ -235,7 +235,7 @@ const SmePortal = () => {
                                     <thead>
                                         <tr className="bg-gray-900/80 border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
                                             <th className="px-6 py-3 font-medium">Report ID</th>
-                                            <th className="px-6 py-3 font-medium">Period</th>
+                                            {/* <th className="px-6 py-3 font-medium">Period</th> */}
                                             <th className="px-6 py-3 font-medium">Dept</th>
                                             <th className="px-6 py-3 font-medium">Date</th>
                                             <th className="px-6 py-3 font-medium text-right">Status</th>
@@ -246,7 +246,7 @@ const SmePortal = () => {
                                         {myAudits.map((audit) => (
                                             <tr key={audit.id} className="hover:bg-gray-800/40 transition-colors">
                                                 <td className="px-6 py-4 text-xs font-mono text-gray-500">{audit.id}</td>
-                                                <td className="px-6 py-4 text-sm font-medium text-gray-200">{audit.auditPeriod}</td>
+                                                {/* <td className="px-6 py-4 text-sm font-medium text-gray-200">{audit.auditPeriod}</td> */}
                                                 <td className="px-6 py-4 text-sm text-gray-400">{audit.department}</td>
                                                 <td className="px-6 py-4 text-sm text-gray-500">{new Date(audit.submissionDate).toLocaleDateString()}</td>
                                                 <td className="px-6 py-4 text-right flex flex-col items-end gap-2">

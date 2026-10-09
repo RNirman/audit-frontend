@@ -152,15 +152,17 @@ const AuditorPortal = () => {
 
     const filteredAudits = useMemo(() => {
         return allAudits.filter(audit => {
+            const roleStatusMatch = userRole !== 'SECOND_AUDITOR' ||
+                audit.status === 'PASSED_STEP_1' || audit.status === 'FLAGGED' || audit.status === 'APPROVED' || audit.status === 'REJECTED';
             const statusMatch = filterStatus === 'ALL' || audit.status === filterStatus;
             const deptMatch = filterDept === 'ALL' || audit.department === filterDept;
             const searchLower = searchQuery.toLowerCase();
             const searchMatch = audit.companyId.toLowerCase().includes(searchLower) ||
                 audit.id.toLowerCase().includes(searchLower);
 
-            return statusMatch && deptMatch && searchMatch;
+            return roleStatusMatch && statusMatch && deptMatch && searchMatch;
         });
-    }, [allAudits, filterStatus, filterDept, searchQuery]);
+    }, [allAudits, filterStatus, filterDept, searchQuery, userRole]);
 
     const { total, approved, rejected, flagged, passed_step_1, pending } = useMemo(() => {
         const total = allAudits.length;
@@ -328,7 +330,10 @@ const AuditorPortal = () => {
                     </div>
 
                     <div className="flex bg-gray-900/50 border border-gray-800 p-1 rounded-lg">
-                        {['ALL', 'PENDING', 'PASSED_STEP_1', 'FLAGGED', 'APPROVED', 'REJECTED'].map((status) => (
+                        {(userRole === 'SECOND_AUDITOR'
+                            ? ['ALL', 'PASSED_STEP_1', 'FLAGGED', 'APPROVED', 'REJECTED']
+                            : ['ALL', 'PENDING', 'PASSED_STEP_1', 'FLAGGED', 'APPROVED', 'REJECTED']
+                        ).map((status) => (
                             <button
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
